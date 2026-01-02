@@ -15,10 +15,21 @@ export function SpotifyConnection() {
   const checkConnection = useCallback(async () => {
     try {
       setIsLoading(true);
+      console.log('Checking Spotify connection status...');
       const response = await adminApi.getSpotifyStatus();
+      console.log('Spotify status response:', response.data);
       setIsConnected(response.data.connected);
-    } catch (error) {
+      if (!response.data.connected) {
+        console.warn('Spotify status check returned connected: false');
+      }
+    } catch (error: any) {
       console.error('Error checking Spotify status:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+      setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
@@ -53,11 +64,19 @@ export function SpotifyConnection() {
   const handleConnect = async () => {
     try {
       setIsConnecting(true);
+      console.log('Requesting Spotify auth URL...');
       const response = await adminApi.getSpotifyAuthUrl();
+      console.log('Received auth URL:', response.data.auth_url);
+      // Extract redirect_uri from auth URL to verify it matches Spotify settings
+      const authUrl = new URL(response.data.auth_url);
+      const redirectUri = authUrl.searchParams.get('redirect_uri');
+      console.log('Redirect URI being sent to Spotify:', redirectUri);
+      console.log('Make sure this exact URI is registered in Spotify Developer Dashboard!');
       // Redirect to Spotify OAuth
       window.location.href = response.data.auth_url;
     } catch (error: any) {
       console.error('Error initiating Spotify connection:', error);
+      console.error('Error details:', error.response?.data);
       alert(error.response?.data?.error || 'Failed to connect Spotify account');
       setIsConnecting(false);
     }
