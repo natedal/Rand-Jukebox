@@ -11,30 +11,42 @@ import { getVenueId } from '../utils/queue.js';
 export async function venueMiddleware(req, res, next) {
   let venueSlug;
   
-  // Strategy 1: Subdomain (e.g., cafemogador.jukebox.com)
-  const host = req.headers.host || '';
-  const hostParts = host.split('.');
-  
-  // Check if we have a subdomain (at least 3 parts: subdomain.domain.tld)
-  // Or if it's localhost with port, check for subdomain pattern
-  if (hostParts.length >= 3) {
-    const subdomain = hostParts[0];
-    // Skip common non-venue subdomains
-    if (subdomain && subdomain !== 'www' && subdomain !== 'api' && subdomain !== 'localhost') {
-      venueSlug = subdomain;
-    }
-  } else if (host.includes('localhost') && hostParts.length >= 2) {
-    // Handle localhost:3000 with subdomain pattern
-    const firstPart = hostParts[0];
-    if (firstPart && firstPart !== 'localhost' && firstPart !== 'www' && firstPart !== 'api') {
-      venueSlug = firstPart;
-    }
-  }
-  
-  // Strategy 2: Header (e.g., X-Venue-Slug: cafemogador)
-  if (!venueSlug && req.headers['x-venue-slug']) {
+  // Strategy 1: Header (e.g., X-Venue-Slug: cafemogador) - PRIORITY
+  // Check header first since frontend explicitly sends it
+  if (req.headers['x-venue-slug']) {
     venueSlug = req.headers['x-venue-slug'];
   }
+  
+  // Strategy 2: Subdomain (e.g., cafemogador.jukebox.com)
+  // Only check subdomain if header wasn't provided
+  if (!venueSlug) {
+    const host = req.headers.host || '';
+    const hostParts = host.split('.');
+    
+    // Skip Railway domains (up.railway.app) and other hosting platforms
+    const isRailwayDomain = host.includes('.railway.app') || host.includes('.up.railway.app');
+    const isVercelDomain = host.includes('.vercel.app');
+    const isLocalhost = host.includes('localhost') || host.includes('127.0.0.1');
+    
+    // Only check subdomain for custom domains (not hosting platform domains)
+    if (!isRailwayDomain && !isVercelDomain && !isLocalhost) {
+      // Check if we have a subdomain (at least 3 parts: subdomain.domain.tld)
+      if (hostParts.length >= 3) {
+        const subdomain = hostParts[0];
+        // Skip common non-venue subdomains
+        if (subdomain && subdomain !== 'www' && subdomain !== 'api' && subdomain !== 'localhost') {
+          venueSlug = subdomain;
+        }
+      }
+    } else if (isLocalhost && hostParts.length >= 2) {
+      // Handle localhost:3000 with subdomain pattern
+      const firstPart = hostParts[0];
+      if (firstPart && firstPart !== 'localhost' && firstPart !== 'www' && firstPart !== 'api') {
+        venueSlug = firstPart;
+      }
+    }
+  }
+  
   
   // Strategy 3: Query parameter (e.g., ?venue=cafemogador)
   if (!venueSlug && req.query.venue) {

@@ -13,13 +13,12 @@ export function getVenueSlug(): string {
   const hostname = window.location.hostname;
   const hostParts = hostname.split('.');
   
-  // Skip Vercel preview domains (e.g., rand-jukebox-xxx-xxx.vercel.app)
-  // Vercel preview domains have multiple dashes and end with .vercel.app
-  const isVercelPreview = hostname.endsWith('.vercel.app') && 
-    hostParts.length > 3; // More than 3 parts = preview domain
+  // Skip ALL Vercel domains (.vercel.app) - both production and preview
+  // Vercel domains should use environment variable fallback, not subdomain detection
+  const isVercelDomain = hostname.endsWith('.vercel.app');
   
-  if (isVercelPreview) {
-    // For Vercel preview domains, use environment variable fallback
+  if (isVercelDomain) {
+    // For Vercel domains, use environment variable fallback
     return process.env.NEXT_PUBLIC_VENUE_SLUG || 'rand';
   }
   
