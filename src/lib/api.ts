@@ -23,7 +23,31 @@ function normalizeApiUrl(url: string | undefined): string {
   return url;
 }
 
-const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
+// Get API URL with runtime validation
+function getApiUrl(): string {
+  // Always normalize at runtime to catch any misconfigurations
+  const envUrl = process.env.NEXT_PUBLIC_API_URL;
+  const normalized = normalizeApiUrl(envUrl);
+  
+  // Double-check: if normalized URL doesn't start with http/https, something is wrong
+  if (!normalized.match(/^https?:\/\//)) {
+    console.error('Invalid API URL configuration:', envUrl, '-> normalized to:', normalized);
+    // Fallback to localhost in development, or show error in production
+    if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+      console.error('API URL is misconfigured. Please set NEXT_PUBLIC_API_URL in Vercel environment variables.');
+    }
+    return 'http://localhost:3001';
+  }
+  
+  return normalized;
+}
+
+const API_URL = getApiUrl();
+
+// Log API URL in development for debugging
+if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
+  console.log('API URL:', API_URL);
+}
 
 const api = axios.create({
   baseURL: API_URL,
@@ -35,6 +59,13 @@ const api = axios.create({
 // Add user identifier and venue slug to requests
 api.interceptors.request.use((config) => {
   if (typeof window !== 'undefined') {
+    // Ensure baseURL is always absolute (runtime check)
+    if (config.baseURL && !config.baseURL.match(/^https?:\/\//)) {
+      console.error('Invalid baseURL detected:', config.baseURL);
+      // Normalize it on the fly
+      config.baseURL = normalizeApiUrl(config.baseURL);
+    }
+    
     const userIdentifier = localStorage.getItem('user_identifier');
     if (userIdentifier) {
       config.headers['X-User-Identifier'] = userIdentifier;
@@ -46,6 +77,36 @@ api.interceptors.request.use((config) => {
   }
   return config;
 });
+
+// Response interceptor to catch configuration errors
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    if (error.config) {
+      const url = error.config.url || '';
+      const baseURL = error.config.baseURL || '';
+      const fullUrl = baseURL + url;
+      
+      // Check if URL is malformed (contains Vercel domain + Railway domain)
+      if (fullUrl.includes('.vercel.app') && fullUrl.includes('.railway.app') && !fullUrl.startsWith('http')) {
+        console.error('❌ API URL Configuration Error!');
+        console.error('Current API URL:', baseURL);
+        console.error('Full request URL:', fullUrl);
+        console.error('This usually means NEXT_PUBLIC_API_URL in Vercel is missing https:// protocol');
+        console.error('Please check Vercel → Settings → Environment Variables');
+        console.error('NEXT_PUBLIC_API_URL should be: https://rand-jukebox-production.up.railway.app');
+      }
+      
+      // Check for 405 errors which often indicate wrong URL
+      if (error.response?.status === 405) {
+        console.error('405 Method Not Allowed - This usually means the API URL is incorrect');
+        console.error('Request URL:', fullUrl);
+        console.error('Expected format: https://your-backend.railway.app/api/...');
+      }
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;
 
