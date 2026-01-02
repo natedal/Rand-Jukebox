@@ -6,12 +6,22 @@ import { useEffect, useState } from 'react';
 import { getVenueSlug, getVenueName } from '@/lib/venue';
 
 export function Header() {
-  const [venueName, setVenueName] = useState<string>('Jukebox');
+  const [venueName, setVenueName] = useState<string>('Rand');
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchVenueName = async () => {
-      const name = await getVenueName();
-      setVenueName(name);
+      try {
+        const name = await getVenueName();
+        setVenueName(name || 'Rand'); // Fallback to 'Rand' if empty
+      } catch (error) {
+        console.error('Error fetching venue name:', error);
+        // Use environment variable or default
+        const fallback = process.env.NEXT_PUBLIC_VENUE_SLUG || 'rand';
+        setVenueName(fallback.charAt(0).toUpperCase() + fallback.slice(1));
+      } finally {
+        setIsLoading(false);
+      }
     };
     fetchVenueName();
   }, []);

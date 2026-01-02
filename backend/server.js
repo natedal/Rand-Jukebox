@@ -33,11 +33,56 @@ import { initRedis } from './db/redis.js';
 // Import Socket.io handlers
 import { setupSocketIO } from './socket/index.js';
 
+// Helper function to check if origin is allowed
+function isOriginAllowed(origin) {
+  if (!origin) return true; // Allow requests with no origin
+  
+  // Always allow localhost for development
+  if (origin.includes('localhost') || origin.includes('127.0.0.1')) {
+    return true;
+  }
+  
+  // Allow ALL Vercel preview domains (*.vercel.app)
+  if (origin.endsWith('.vercel.app')) {
+    return true;
+  }
+  
+  // Check exact match with FRONTEND_URL
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  if (origin === frontendUrl) {
+    return true;
+  }
+  
+  // Check subdomain matches for production domain
+  const frontendDomain = frontendUrl.replace(/^https?:\/\//, '').split('/')[0];
+  if (frontendDomain && !frontendDomain.includes('localhost')) {
+    const originDomain = origin.replace(/^https?:\/\//, '').split('/')[0];
+    // Extract base domain (e.g., 'jukebox.app' from 'venue1.jukebox.app')
+    const domainParts = frontendDomain.split('.');
+    if (domainParts.length >= 2) {
+      const baseDomain = domainParts.slice(-2).join('.');
+      if (originDomain.endsWith('.' + baseDomain) || originDomain === baseDomain) {
+        return true;
+      }
+    }
+  }
+  
+  return false;
+}
+
 const app = express();
 const httpServer = createServer(app);
+
+// Socket.io CORS configuration
 const io = new Server(httpServer, {
   cors: {
-    origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3000'],
+    origin: (origin, callback) => {
+      if (isOriginAllowed(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     methods: ['GET', 'POST'],
     credentials: true,
   },
@@ -45,9 +90,15 @@ const io = new Server(httpServer, {
 
 const PORT = process.env.PORT || 3001;
 
-// Middleware
+// Express CORS configuration
 app.use(cors({
-  origin: [process.env.FRONTEND_URL || 'http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3000'],
+  origin: (origin, callback) => {
+    if (isOriginAllowed(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
 }));
 app.use(express.json());

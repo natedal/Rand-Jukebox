@@ -10,15 +10,29 @@ export function getVenueSlug(): string {
     return process.env.NEXT_PUBLIC_VENUE_SLUG || 'rand';
   }
 
-  // Strategy 1: Subdomain (e.g., cafemogador.jukebox.com)
   const hostname = window.location.hostname;
   const hostParts = hostname.split('.');
   
+  // Skip Vercel preview domains (e.g., rand-jukebox-xxx-xxx.vercel.app)
+  // Vercel preview domains have multiple dashes and end with .vercel.app
+  const isVercelPreview = hostname.endsWith('.vercel.app') && 
+    hostParts.length > 3; // More than 3 parts = preview domain
+  
+  if (isVercelPreview) {
+    // For Vercel preview domains, use environment variable fallback
+    return process.env.NEXT_PUBLIC_VENUE_SLUG || 'rand';
+  }
+  
+  // Strategy 1: Subdomain detection (for production domains)
   // Check if we have a subdomain (at least 3 parts: subdomain.domain.tld)
   if (hostParts.length >= 3) {
     const subdomain = hostParts[0];
     // Skip common non-venue subdomains
-    if (subdomain && subdomain !== 'www' && subdomain !== 'api' && subdomain !== 'localhost') {
+    if (subdomain && 
+        subdomain !== 'www' && 
+        subdomain !== 'api' && 
+        subdomain !== 'localhost' &&
+        !subdomain.includes('-')) { // Skip domains with dashes (likely preview)
       return subdomain;
     }
   } else if (hostname.includes('localhost') && hostParts.length >= 2) {
