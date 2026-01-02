@@ -1,7 +1,29 @@
 import axios from 'axios';
 import { getVenueSlug } from './venue';
 
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+// Ensure API_URL is always an absolute URL with protocol
+function normalizeApiUrl(url: string | undefined): string {
+  if (!url) {
+    return 'http://localhost:3001';
+  }
+  
+  // Remove trailing slashes
+  url = url.trim().replace(/\/+$/, '');
+  
+  // If it doesn't start with http:// or https://, add https://
+  if (!url.match(/^https?:\/\//)) {
+    // If it's localhost, use http, otherwise use https
+    if (url.includes('localhost') || url.includes('127.0.0.1')) {
+      url = `http://${url}`;
+    } else {
+      url = `https://${url}`;
+    }
+  }
+  
+  return url;
+}
+
+const API_URL = normalizeApiUrl(process.env.NEXT_PUBLIC_API_URL);
 
 const api = axios.create({
   baseURL: API_URL,

@@ -21,7 +21,16 @@ export async function GET(request: NextRequest) {
   }
 
   // Proxy to backend callback endpoint
-  const backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  // Normalize API URL to ensure it's absolute with protocol
+  let backendUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
+  backendUrl = backendUrl.trim().replace(/\/+$/, '');
+  if (!backendUrl.match(/^https?:\/\//)) {
+    if (backendUrl.includes('localhost') || backendUrl.includes('127.0.0.1')) {
+      backendUrl = `http://${backendUrl}`;
+    } else {
+      backendUrl = `https://${backendUrl}`;
+    }
+  }
   const backendCallbackUrl = `${backendUrl}/api/admin/spotify/callback?code=${code}${state ? `&state=${state}` : ''}`;
 
   try {
