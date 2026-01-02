@@ -26,6 +26,17 @@ export default function AdminPage() {
   
   const { queue, currentSong, fetchQueue } = useJukeboxStore();
 
+  const fetchAdminStatus = useCallback(async () => {
+    try {
+      const response = await adminApi.getStatus();
+      setAdminStatus(response.data);
+      setIsPlaying(response.data.is_playing);
+      setQueueEnabled(response.data.queue_enabled);
+    } catch (error) {
+      console.error('Error fetching admin status:', error);
+    }
+  }, []);
+
   useEffect(() => {
     // Check if admin token exists
     const token = localStorage.getItem('admin_token');
@@ -60,17 +71,6 @@ export default function AdminPage() {
       setIsLoading(false);
     }
   };
-
-  const fetchAdminStatus = useCallback(async () => {
-    try {
-      const response = await adminApi.getStatus();
-      setAdminStatus(response.data);
-      setIsPlaying(response.data.is_playing);
-      setQueueEnabled(response.data.queue_enabled);
-    } catch (error) {
-      console.error('Error fetching admin status:', error);
-    }
-  }, []);
 
   const handlePlay = async () => {
     try {
