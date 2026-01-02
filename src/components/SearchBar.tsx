@@ -81,12 +81,22 @@ export function SearchBar() {
     queueEnabled,
     fetchUserStatus,
     searchSongs,
+    error: storeError,
   } = useJukeboxStore();
   
   const [isFocused, setIsFocused] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  
+  // Show store error if search fails
+  useEffect(() => {
+    if (storeError && storeError.includes('search')) {
+      setErrorMessage(storeError);
+      setShowError(true);
+      setTimeout(() => setShowError(false), 5000);
+    }
+  }, [storeError]);
 
   // Load all songs when search bar is focused (for playlist mode)
   useEffect(() => {

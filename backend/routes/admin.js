@@ -127,6 +127,14 @@ router.get('/devices', authenticateAdmin, async (req, res) => {
     const devices = await getSpotifyDevices(venueId);
     res.json({ devices });
   } catch (error) {
+    // If Spotify not connected, return empty array instead of error
+    if (error.message && (
+      error.message.includes('not configured') || 
+      error.message.includes('refresh') ||
+      error.message.includes('Premium credentials')
+    )) {
+      return res.json({ devices: [] });
+    }
     console.error('Error getting devices:', error);
     res.status(500).json({ error: 'Failed to get devices' });
   }
@@ -186,9 +194,28 @@ router.get('/spotify/status', authenticateAdmin, async (req, res) => {
 router.get('/spotify/auth', authenticateAdmin, async (req, res) => {
   try {
     const clientId = process.env.SPOTIFY_CLIENT_ID;
-    // Use frontend URL for callback (port 3000) - Spotify requires 127.0.0.1 for localhost
+    
+    if (!clientId) {
+      return res.status(500).json({ 
+        error: 'Spotify Client ID not configured. Please set SPOTIFY_CLIENT_ID environment variable.' 
+      });
+    }
+    
+    // Use frontend URL for callback - Spotify requires exact match
     const frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:3000';
-    const redirectUri = `${frontendUrl}/api/spotify/callback`;
+    
+    // Remove trailing slashes
+    const cleanFrontendUrl = frontendUrl.replace(/\/+$/, '');
+    const redirectUri = `${cleanFrontendUrl}/api/spotify/callback`;
+    
+    // Validate redirect URI format
+    if (!redirectUri.match(/^https?:\/\/.+\/api\/spotify\/callback$/)) {
+      console.error('Invalid redirect URI format:', redirectUri);
+      return res.status(500).json({ 
+        error: 'Invalid FRONTEND_URL configuration. Must be a valid URL (e.g., https://rand-jukebox.vercel.app)' 
+      });
+    }
+    
     const scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';
     const state = req.user.venue; // Use venue slug as state for verification
     

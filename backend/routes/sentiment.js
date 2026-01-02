@@ -150,11 +150,28 @@ router.get('/song/:song_id/feedback', authenticateAdmin, async (req, res) => {
     const venueId = req.venue.id;
     const pool = getPool();
 
-    // Verify song exists and belongs to venue
-    const songResult = await pool.query(
-      'SELECT id, spotify_id, title, artist FROM songs WHERE id = $1 AND venue_id = $2',
-      [song_id, venueId]
-    );
+    // Validate song_id format (should be UUID or spotify_id)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    const spotifyIdRegex = /^[a-zA-Z0-9]{22}$/;
+    
+    if (!uuidRegex.test(song_id) && !spotifyIdRegex.test(song_id)) {
+      return res.status(400).json({ error: 'Invalid song ID format. Please use a valid song ID from the queue.' });
+    }
+
+    // Try to find song by UUID first, then by spotify_id
+    let songResult;
+    if (uuidRegex.test(song_id)) {
+      songResult = await pool.query(
+        'SELECT id, spotify_id, title, artist FROM songs WHERE id = $1 AND venue_id = $2',
+        [song_id, venueId]
+      );
+    } else {
+      // Try spotify_id lookup - get the most recent song with this spotify_id
+      songResult = await pool.query(
+        'SELECT id, spotify_id, title, artist FROM songs WHERE spotify_id = $1 AND venue_id = $2 ORDER BY created_at DESC LIMIT 1',
+        [song_id, venueId]
+      );
+    }
 
     if (songResult.rows.length === 0) {
       return res.status(404).json({ error: 'Song not found' });

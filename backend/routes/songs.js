@@ -12,6 +12,12 @@ const router = express.Router();
  */
 router.post('/search', async (req, res) => {
   try {
+    // Ensure venue middleware attached venue to request
+    if (!req.venue || !req.venue.id) {
+      console.error('Venue middleware failed - venue not attached to request');
+      return res.status(500).json({ error: 'Venue configuration error. Please check backend logs.' });
+    }
+
     const { query } = req.body;
     const searchQuery = (query || '').trim().toLowerCase();
 
@@ -130,7 +136,21 @@ router.post('/search', async (req, res) => {
     res.json({ results });
   } catch (error) {
     console.error('Error searching songs:', error);
-    res.status(500).json({ error: 'Failed to search songs' });
+    
+    // Provide more specific error messages
+    if (error.message && error.message.includes('Spotify')) {
+      return res.status(500).json({ 
+        error: 'Spotify service unavailable. Please try again later.' 
+      });
+    }
+    
+    if (error.message && error.message.includes('database') || error.message.includes('query')) {
+      return res.status(500).json({ 
+        error: 'Database error. Please check backend logs.' 
+      });
+    }
+    
+    res.status(500).json({ error: 'Failed to search songs. Please try again.' });
   }
 });
 
