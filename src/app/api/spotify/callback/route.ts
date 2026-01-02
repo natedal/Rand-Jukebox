@@ -32,6 +32,13 @@ export async function GET(request: NextRequest) {
     }
   }
   const backendCallbackUrl = `${backendUrl}/api/admin/spotify/callback?code=${code}${state ? `&state=${state}` : ''}`;
+  
+  // Log the backend URL being used (for debugging)
+  console.log('Backend URL configuration:', {
+    envVar: process.env.NEXT_PUBLIC_API_URL,
+    normalized: backendUrl,
+    callbackUrl: backendCallbackUrl,
+  });
 
   try {
     console.log('Spotify callback received in Next.js route:', {
