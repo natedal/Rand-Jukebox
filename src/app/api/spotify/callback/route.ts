@@ -34,26 +34,53 @@ export async function GET(request: NextRequest) {
   const backendCallbackUrl = `${backendUrl}/api/admin/spotify/callback?code=${code}${state ? `&state=${state}` : ''}`;
 
   try {
+    console.log('Spotify callback received in Next.js route:', {
+      code: code ? 'present' : 'missing',
+      state: state || 'missing',
+      error: error || 'none',
+      backendUrl: backendCallbackUrl,
+    });
+    
     // Forward the request to backend
     const response = await fetch(backendCallbackUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
+      redirect: 'manual', // Don't follow redirects automatically
     });
 
-    // Backend will redirect, so follow the redirect
-    if (response.redirected) {
-      return NextResponse.redirect(response.url);
+    console.log('Backend callback response:', {
+      status: response.status,
+      statusText: response.statusText,
+      redirected: response.redirected,
+      location: response.headers.get('location'),
+    });
+
+    // Backend will redirect, so check for redirect status or location header
+    if (response.status >= 300 && response.status < 400) {
+      const location = response.headers.get('location');
+      if (location) {
+        console.log('Redirecting to:', location);
+        return NextResponse.redirect(location);
+      }
     }
 
     // If backend returns a redirect location header
     const location = response.headers.get('location');
     if (location) {
+      console.log('Redirecting via location header to:', location);
       return NextResponse.redirect(location);
     }
 
+    // If response is OK but no redirect, check response body
+    if (response.ok) {
+      const data = await response.text();
+      console.log('Backend returned OK but no redirect. Response:', data.substring(0, 200));
+    }
+
     // Fallback: redirect to admin
+    console.log('Using fallback redirect to admin');
     return NextResponse.redirect(
       new URL('/admin?spotify_connected=true', request.url)
     );

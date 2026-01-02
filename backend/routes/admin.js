@@ -291,35 +291,72 @@ router.get('/spotify/callback', async (req, res) => {
     const clientId = process.env.SPOTIFY_CLIENT_ID;
     const clientSecret = process.env.SPOTIFY_CLIENT_SECRET;
     // Use frontend URL for callback - must match the redirect_uri in the auth request
-    const frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:3000';
+    // Normalize FRONTEND_URL the same way as auth endpoint
+    let frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:3000';
+    frontendUrl = frontendUrl.trim().replace(/\/+$/, '');
+    if (!frontendUrl.match(/^https?:\/\//)) {
+      if (frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1')) {
+        frontendUrl = `http://${frontendUrl}`;
+      } else {
+        frontendUrl = `https://${frontendUrl}`;
+      }
+    }
     const redirectUri = `${frontendUrl}/api/spotify/callback`;
+    
+    console.log('Spotify OAuth callback received:', {
+      venueSlug,
+      venueId,
+      code: code ? 'present' : 'missing',
+      state: state || 'missing',
+      redirectUri,
+      frontendUrl: process.env.FRONTEND_URL,
+    });
     
     // Exchange code for refresh token
     const authString = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
     
-    const response = await axios.post(
-      'https://accounts.spotify.com/api/token',
-      new URLSearchParams({
-        grant_type: 'authorization_code',
-        code,
-        redirect_uri: redirectUri,
-      }),
-      {
-        headers: {
-          'Authorization': `Basic ${authString}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-      }
-    );
-    
-    // Store refresh token
-    const pool = getPool();
-    await pool.query(
-      'UPDATE admin_settings SET spotify_refresh_token = $1 WHERE venue_id = $2',
-      [response.data.refresh_token, venueId]
-    );
-    
-    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin?spotify_connected=true`);
+    try {
+      const response = await axios.post(
+        'https://accounts.spotify.com/api/token',
+        new URLSearchParams({
+          grant_type: 'authorization_code',
+          code,
+          redirect_uri: redirectUri,
+        }),
+        {
+          headers: {
+            'Authorization': `Basic ${authString}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+        }
+      );
+      
+      console.log('Spotify token exchange successful for venue:', venueSlug);
+      
+      // Store refresh token
+      const pool = getPool();
+      const updateResult = await pool.query(
+        'UPDATE admin_settings SET spotify_refresh_token = $1 WHERE venue_id = $2',
+        [response.data.refresh_token, venueId]
+      );
+      
+      console.log('Refresh token saved:', {
+        venueId,
+        venueSlug,
+        rowsUpdated: updateResult.rowCount,
+        hasToken: !!response.data.refresh_token,
+      });
+      
+      res.redirect(`${frontendUrl}/admin?spotify_connected=true`);
+    } catch (tokenError) {
+      console.error('Spotify token exchange failed:', {
+        error: tokenError.response?.data || tokenError.message,
+        venueSlug,
+        redirectUri,
+        code: code ? 'present' : 'missing',
+      });
+      throw tokenError;
+    }
   } catch (error) {
     console.error('Spotify OAuth error:', error.response?.data || error.message);
     res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/admin?spotify_error=oauth_failed`);

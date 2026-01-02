@@ -25,22 +25,28 @@ export function SpotifyConnection() {
   }, []);
 
   useEffect(() => {
-    checkConnection();
-    
-    // Check for OAuth callback parameters
+    // Check for OAuth callback parameters first
     const connected = searchParams?.get('spotify_connected');
     const error = searchParams?.get('spotify_error');
     
     if (connected === 'true') {
-      setIsConnected(true);
+      console.log('Spotify connected param detected, refreshing status...');
       setIsConnecting(false);
+      // Wait a moment for backend to save token, then check status
+      setTimeout(() => {
+        checkConnection();
+      }, 500);
       // Remove query param from URL
       router.replace('/admin');
     } else if (error) {
       console.error('Spotify connection error:', error);
       setIsConnecting(false);
+      setIsConnected(false);
       // Remove error param from URL
       router.replace('/admin');
+    } else {
+      // Normal status check
+      checkConnection();
     }
   }, [searchParams, router, checkConnection]);
 
