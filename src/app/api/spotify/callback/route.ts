@@ -41,14 +41,34 @@ export async function GET(request: NextRequest) {
       backendUrl: backendCallbackUrl,
     });
     
-    // Forward the request to backend
-    const response = await fetch(backendCallbackUrl, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      redirect: 'manual', // Don't follow redirects automatically
-    });
+    // Forward the request to backend with timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+    
+    let response;
+    try {
+      response = await fetch(backendCallbackUrl, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        redirect: 'manual', // Don't follow redirects automatically
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+    } catch (fetchError: any) {
+      clearTimeout(timeoutId);
+      if (fetchError.name === 'AbortError') {
+        console.error('Backend callback request timed out after 10 seconds');
+        return NextResponse.redirect(
+          new URL('/admin?spotify_error=timeout', request.url)
+        );
+      }
+      console.error('Failed to fetch backend callback:', fetchError);
+      return NextResponse.redirect(
+        new URL(`/admin?spotify_error=fetch_failed&msg=${encodeURIComponent(fetchError.message)}`, request.url)
+      );
+    }
 
     console.log('Backend callback response:', {
       status: response.status,
