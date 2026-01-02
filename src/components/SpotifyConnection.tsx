@@ -17,23 +17,38 @@ export function SpotifyConnection() {
       setIsLoading(true);
       console.log('Checking Spotify connection status...');
       const response = await adminApi.getSpotifyStatus();
-      console.log('Spotify status response:', response.data);
+      console.log('✅ Spotify status response:', response.data);
+      const wasConnected = isConnected;
       setIsConnected(response.data.connected);
-      if (!response.data.connected) {
-        console.warn('Spotify status check returned connected: false');
+      
+      if (response.data.connected) {
+        console.log('✅✅✅ Spotify is CONNECTED!');
+        // If we just connected, remove the query param now
+        if (searchParams?.get('spotify_connected') === 'true') {
+          setTimeout(() => {
+            router.replace('/admin');
+          }, 1000);
+        }
+      } else {
+        console.warn('⚠️ Spotify status check returned connected: false');
+        if (wasConnected) {
+          console.warn('⚠️ Connection was lost!');
+        }
       }
     } catch (error: any) {
-      console.error('Error checking Spotify status:', error);
+      console.error('❌ Error checking Spotify status:', error);
       console.error('Error details:', {
         message: error.message,
         response: error.response?.data,
         status: error.response?.status,
+        url: error.config?.url,
+        baseURL: error.config?.baseURL,
       });
       setIsConnected(false);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [isConnected, searchParams, router]);
 
   useEffect(() => {
     // Check for OAuth callback parameters first
@@ -41,20 +56,28 @@ export function SpotifyConnection() {
     const error = searchParams?.get('spotify_error');
     
     if (connected === 'true') {
-      console.log('Spotify connected param detected, refreshing status...');
+      console.log('✅ Spotify connected param detected, refreshing status...');
       setIsConnecting(false);
-      // Wait a moment for backend to save token, then check status
+      // Wait longer for backend to save token, then check status
+      // Increased delay to ensure backend has processed the callback
       setTimeout(() => {
+        console.log('Checking connection status after OAuth callback...');
         checkConnection();
-      }, 500);
-      // Remove query param from URL
-      router.replace('/admin');
+      }, 2000); // Increased from 500ms to 2 seconds
+      // Don't remove query param immediately - wait to see if it worked
+      // Remove it after status check completes
     } else if (error) {
-      console.error('Spotify connection error:', error);
+      console.error('❌ Spotify connection error:', error);
+      const errorDetails = searchParams?.get('msg') || searchParams?.get('details');
+      if (errorDetails) {
+        console.error('Error details:', decodeURIComponent(errorDetails));
+      }
       setIsConnecting(false);
       setIsConnected(false);
-      // Remove error param from URL
-      router.replace('/admin');
+      // Remove error param from URL after a delay
+      setTimeout(() => {
+        router.replace('/admin');
+      }, 3000);
     } else {
       // Normal status check
       checkConnection();
