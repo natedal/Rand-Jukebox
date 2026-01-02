@@ -136,6 +136,13 @@ router.post('/search', async (req, res) => {
     res.json({ results });
   } catch (error) {
     console.error('Error searching songs:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      venueId: req.venue?.id,
+      venueSlug: req.venue?.slug,
+      query: req.body?.query,
+    });
     
     // Provide more specific error messages
     if (error.message && error.message.includes('Spotify')) {
@@ -144,13 +151,21 @@ router.post('/search', async (req, res) => {
       });
     }
     
-    if (error.message && error.message.includes('database') || error.message.includes('query')) {
+    if (error.message && (error.message.includes('database') || error.message.includes('query'))) {
       return res.status(500).json({ 
         error: 'Database error. Please check backend logs.' 
       });
     }
     
-    res.status(500).json({ error: 'Failed to search songs. Please try again.' });
+    // Log full error for debugging
+    if (process.env.NODE_ENV === 'development') {
+      console.error('Full error object:', error);
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to search songs. Please try again.',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 
