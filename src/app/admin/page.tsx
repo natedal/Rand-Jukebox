@@ -45,20 +45,22 @@ export default function AdminPage() {
     } else {
       setIsLoading(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!isAuthenticated) return;
+    
+    fetchAdminStatus();
+    fetchQueue();
+    // Poll for updates
+    const interval = setInterval(() => {
       fetchAdminStatus();
       fetchQueue();
-      // Poll for updates
-      const interval = setInterval(() => {
-        fetchAdminStatus();
-        fetchQueue();
-      }, 5000);
-      return () => clearInterval(interval);
-    }
-  }, [isAuthenticated, fetchAdminStatus, fetchQueue]);
+    }, 5000);
+    return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isAuthenticated]);
 
   const checkAuth = async () => {
     try {
