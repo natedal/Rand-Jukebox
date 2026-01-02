@@ -55,7 +55,21 @@ export async function GET(request: NextRequest) {
       statusText: response.statusText,
       redirected: response.redirected,
       location: response.headers.get('location'),
+      ok: response.ok,
     });
+
+    // Handle error responses
+    if (!response.ok && response.status < 300) {
+      const errorText = await response.text();
+      console.error('Backend callback error:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText.substring(0, 500),
+      });
+      return NextResponse.redirect(
+        new URL(`/admin?spotify_error=backend_error_${response.status}`, request.url)
+      );
+    }
 
     // Backend will redirect, so check for redirect status or location header
     if (response.status >= 300 && response.status < 400) {
@@ -77,17 +91,29 @@ export async function GET(request: NextRequest) {
     if (response.ok) {
       const data = await response.text();
       console.log('Backend returned OK but no redirect. Response:', data.substring(0, 200));
+      // If backend returned success but no redirect, assume it worked
+      return NextResponse.redirect(
+        new URL('/admin?spotify_connected=true', request.url)
+      );
     }
 
-    // Fallback: redirect to admin
-    console.log('Using fallback redirect to admin');
+    // Fallback: redirect to admin (this shouldn't normally happen)
+    console.warn('Using fallback redirect - backend response was unexpected:', {
+      status: response.status,
+      statusText: response.statusText,
+    });
     return NextResponse.redirect(
       new URL('/admin?spotify_connected=true', request.url)
     );
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error proxying Spotify callback:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      backendUrl: backendCallbackUrl,
+    });
     return NextResponse.redirect(
-      new URL('/admin?spotify_error=proxy_failed', request.url)
+      new URL(`/admin?spotify_error=proxy_failed&details=${encodeURIComponent(error.message)}`, request.url)
     );
   }
 }
