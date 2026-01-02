@@ -202,18 +202,27 @@ router.get('/spotify/auth', authenticateAdmin, async (req, res) => {
     }
     
     // Use frontend URL for callback - Spotify requires exact match
-    const frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:3000';
+    let frontendUrl = process.env.FRONTEND_URL || 'http://127.0.0.1:3000';
     
-    // Remove trailing slashes
-    const cleanFrontendUrl = frontendUrl.replace(/\/+$/, '');
-    const redirectUri = `${cleanFrontendUrl}/api/spotify/callback`;
+    // Normalize frontend URL - ensure it has protocol
+    frontendUrl = frontendUrl.trim().replace(/\/+$/, '');
+    if (!frontendUrl.match(/^https?:\/\//)) {
+      // If missing protocol, add https:// (or http:// for localhost)
+      if (frontendUrl.includes('localhost') || frontendUrl.includes('127.0.0.1')) {
+        frontendUrl = `http://${frontendUrl}`;
+      } else {
+        frontendUrl = `https://${frontendUrl}`;
+      }
+    }
     
-    // Validate redirect URI format
+    const redirectUri = `${frontendUrl}/api/spotify/callback`;
+    
+    // Validate redirect URI format - be lenient for Vercel preview URLs
     if (!redirectUri.match(/^https?:\/\/.+\/api\/spotify\/callback$/)) {
       console.error('Invalid redirect URI format:', redirectUri);
-      return res.status(500).json({ 
-        error: 'Invalid FRONTEND_URL configuration. Must be a valid URL (e.g., https://rand-jukebox.vercel.app)' 
-      });
+      console.error('FRONTEND_URL was:', process.env.FRONTEND_URL);
+      // Don't fail - just log and use it anyway (Spotify will reject if wrong)
+      console.warn('Warning: Redirect URI format validation failed, but proceeding anyway');
     }
     
     const scopes = 'user-read-playback-state user-modify-playback-state user-read-currently-playing';

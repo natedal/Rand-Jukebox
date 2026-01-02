@@ -189,8 +189,8 @@ export default function AdminPage() {
 
       <Header />
 
-      <main className="flex-1 relative z-10">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12">
+      <main className="flex-1 relative z-10 overflow-x-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 md:py-12 w-full">
           {/* Admin Header */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -228,7 +228,7 @@ export default function AdminPage() {
 
           <div className="grid lg:grid-cols-3 gap-4 md:gap-6 lg:gap-8">
             {/* Left Column - Now Playing & Controls */}
-            <div className="lg:col-span-2 space-y-4 md:space-y-6 overflow-visible">
+            <div className="lg:col-span-2 space-y-4 md:space-y-6 overflow-x-hidden">
               {/* Now Playing Card */}
               <motion.div
                 initial={{ opacity: 0, x: -20 }}
@@ -443,7 +443,7 @@ export default function AdminPage() {
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="glass rounded-3xl p-4 md:p-6 h-fit order-3 lg:order-none"
+              className="glass rounded-3xl p-4 md:p-6 h-fit order-3 lg:order-none lg:sticky lg:top-4"
             >
               <div className="flex items-center justify-between mb-4 md:mb-6">
                 <h2 className="text-lg md:text-xl font-semibold text-white">Queue Management</h2>
