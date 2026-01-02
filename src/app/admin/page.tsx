@@ -61,7 +61,7 @@ export default function AdminPage() {
     }
   };
 
-  const fetchAdminStatus = async () => {
+  const fetchAdminStatus = useCallback(async () => {
     try {
       const response = await adminApi.getStatus();
       setAdminStatus(response.data);
@@ -70,7 +70,7 @@ export default function AdminPage() {
     } catch (error) {
       console.error('Error fetching admin status:', error);
     }
-  };
+  }, []);
 
   const handlePlay = async () => {
     try {
