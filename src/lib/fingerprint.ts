@@ -1,6 +1,6 @@
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
 
-let fpPromise: Promise<FingerprintJS.Agent> | null = null;
+let fpPromise: Promise<Awaited<ReturnType<typeof FingerprintJS.load>>> | null = null;
 
 export async function getUserIdentifier(): Promise<string> {
   // Check localStorage first

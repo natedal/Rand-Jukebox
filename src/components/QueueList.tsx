@@ -33,8 +33,8 @@ function SongCard({ song, index }: { song: Song; index: number }) {
         {/* Album Art */}
         <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0 shadow-lg ring-1 ring-white/10">
           <Image
-            src={song.albumArt}
-            alt={song.album}
+            src={song.albumArt || '/placeholder-album.png'}
+            alt={song.album || 'Album cover'}
             fill
             className="object-cover transition-transform duration-300 group-hover:scale-110"
           />
@@ -48,7 +48,7 @@ function SongCard({ song, index }: { song: Song; index: number }) {
 
         {/* Duration - Hidden on mobile */}
         <div className="hidden md:block text-sm text-gray-500 font-mono flex-shrink-0">
-          {formatDuration(song.duration)}
+          {formatDuration(song.duration || 0)}
         </div>
 
         {/* Voting */}

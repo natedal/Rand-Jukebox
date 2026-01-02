@@ -24,7 +24,8 @@ export function NowPlaying() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const currentTime = Math.floor((progress / 100) * currentSong.duration);
+  const duration = currentSong.duration || 0;
+  const currentTime = Math.floor((progress / 100) * duration);
 
   return (
     <motion.div
@@ -81,8 +82,8 @@ export function NowPlaying() {
             {/* Album Cover */}
             <div className="relative w-24 h-24 sm:w-28 sm:h-28 md:w-36 md:h-36 lg:w-44 lg:h-44 rounded-xl md:rounded-2xl overflow-hidden shadow-2xl ring-2 ring-gold-400/30 group-hover:ring-gold-400/60 transition-all duration-300">
               <Image
-                src={currentSong.albumArt}
-                alt={currentSong.album}
+                src={currentSong.albumArt || '/placeholder-album.png'}
+                alt={currentSong.album || 'Album cover'}
                 fill
                 className="object-cover"
                 priority
@@ -206,7 +207,7 @@ export function NowPlaying() {
           </div>
           <div className="flex justify-between mt-2 text-sm text-gray-400 font-mono">
             <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(currentSong.duration)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
       </div>

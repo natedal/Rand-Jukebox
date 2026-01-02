@@ -59,8 +59,7 @@ export default function AdminPage() {
       fetchQueue();
     }, 5000);
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchAdminStatus, fetchQueue]);
 
   const checkAuth = async () => {
     try {
