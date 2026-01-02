@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/Header';
 import { Footer } from '@/components/Footer';
 import { AdminLogin } from '@/components/AdminLogin';
@@ -47,7 +47,7 @@ export default function AdminPage() {
       }, 5000);
       return () => clearInterval(interval);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, fetchAdminStatus, fetchQueue]);
 
   const checkAuth = async () => {
     try {

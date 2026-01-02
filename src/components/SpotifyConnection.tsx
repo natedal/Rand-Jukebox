@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { adminApi } from '@/lib/api';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -11,6 +11,18 @@ export function SpotifyConnection() {
   const [isConnecting, setIsConnecting] = useState(false);
   const router = useRouter();
   const searchParams = useSearchParams();
+
+  const checkConnection = useCallback(async () => {
+    try {
+      setIsLoading(true);
+      const response = await adminApi.getSpotifyStatus();
+      setIsConnected(response.data.connected);
+    } catch (error) {
+      console.error('Error checking Spotify status:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     checkConnection();
@@ -30,19 +42,7 @@ export function SpotifyConnection() {
       // Remove error param from URL
       router.replace('/admin');
     }
-  }, [searchParams]);
-
-  const checkConnection = async () => {
-    try {
-      setIsLoading(true);
-      const response = await adminApi.getSpotifyStatus();
-      setIsConnected(response.data.connected);
-    } catch (error) {
-      console.error('Error checking Spotify status:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [searchParams, router, checkConnection]);
 
   const handleConnect = async () => {
     try {
@@ -126,7 +126,7 @@ export function SpotifyConnection() {
       ) : (
         <div>
           <p className="text-gray-400 mb-4">
-            Connect your Spotify Premium account to enable music playback. You'll be redirected to Spotify to authorize the connection.
+            Connect your Spotify Premium account to enable music playback. You&apos;ll be redirected to Spotify to authorize the connection.
           </p>
           <motion.button
             whileHover={{ scale: 1.02 }}
