@@ -31,7 +31,8 @@ export async function GET(request: NextRequest) {
       backendUrl = `https://${backendUrl}`;
     }
   }
-  const backendCallbackUrl = `${backendUrl}/api/admin/spotify/callback?code=${code}${state ? `&state=${state}` : ''}`;
+  // Include venue in query params for venueMiddleware, and state for callback handler
+  const backendCallbackUrl = `${backendUrl}/api/admin/spotify/callback?code=${code}${state ? `&state=${state}` : ''}${state ? `&venue=${state}` : ''}`;
   
   // Log the backend URL being used (for debugging)
   console.log('Backend URL configuration:', {
