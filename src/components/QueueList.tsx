@@ -22,16 +22,16 @@ function SongCard({ song, index }: { song: Song; index: number }) {
       layout
       className="song-card group"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2 sm:gap-3 md:gap-4">
         {/* Position */}
-        <div className="w-8 text-center">
-          <span className="text-2xl font-bold gradient-text" style={{ fontFamily: 'Syne, sans-serif' }}>
+        <div className="w-6 sm:w-8 text-center flex-shrink-0">
+          <span className="text-lg sm:text-xl md:text-2xl font-bold gradient-text" style={{ fontFamily: 'Syne, sans-serif' }}>
             {index + 1}
           </span>
         </div>
 
         {/* Album Art */}
-        <div className="relative w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 shadow-lg ring-1 ring-white/10">
+        <div className="relative w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14 rounded-lg sm:rounded-xl overflow-hidden flex-shrink-0 shadow-lg ring-1 ring-white/10">
           <Image
             src={song.albumArt}
             alt={song.album}
@@ -42,49 +42,72 @@ function SongCard({ song, index }: { song: Song; index: number }) {
 
         {/* Song Info */}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white truncate">{song.title}</h3>
-          <p className="text-sm text-gray-400 truncate">{song.artist}</p>
+          <h3 className="text-sm sm:text-base font-semibold text-white truncate">{song.title}</h3>
+          <p className="text-xs sm:text-sm text-gray-400 truncate">{song.artist}</p>
         </div>
 
-        {/* Duration */}
-        <div className="hidden sm:block text-sm text-gray-500 font-mono">
+        {/* Duration - Hidden on mobile */}
+        <div className="hidden md:block text-sm text-gray-500 font-mono flex-shrink-0">
           {formatDuration(song.duration)}
         </div>
 
         {/* Voting */}
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-0.5 sm:gap-1 flex-shrink-0">
           <button
-            onClick={() => downvoteSong(song.id)}
-            className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all duration-200"
+            onClick={async () => {
+              try {
+                await downvoteSong(song.id);
+              } catch (error) {
+                // Error is handled in store
+              }
+            }}
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all duration-200"
+            title="Downvote"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
             </svg>
           </button>
           
-          <div className="min-w-[3rem] text-center">
+          <div className="min-w-[2rem] sm:min-w-[3rem] text-center">
             <motion.span
-              key={song.votes}
+              key={song.net_score !== undefined ? song.net_score : song.votes}
               initial={{ scale: 1.2 }}
               animate={{ scale: 1 }}
-              className="text-lg font-bold text-gold-400"
+              className={`text-base sm:text-lg font-bold ${
+                (song.net_score !== undefined ? song.net_score : song.votes) >= 0 
+                  ? 'text-gold-400' 
+                  : 'text-red-400'
+              }`}
             >
-              {song.votes}
+              {song.net_score !== undefined ? song.net_score : song.votes}
             </motion.span>
+            {(song.upvotes !== undefined || song.downvotes !== undefined) && (
+              <div className="text-xs text-gray-500">
+                +{song.upvotes || 0} / -{song.downvotes || 0}
+              </div>
+            )}
           </div>
           
           <button
-            onClick={() => upvoteSong(song.id)}
-            className="p-2 rounded-lg hover:bg-green-500/20 text-gray-400 hover:text-green-400 transition-all duration-200"
+            onClick={async () => {
+              try {
+                await upvoteSong(song.id);
+              } catch (error) {
+                // Error is handled in store
+              }
+            }}
+            className="p-1.5 sm:p-2 rounded-lg hover:bg-green-500/20 text-gray-400 hover:text-green-400 transition-all duration-200"
+            title="Upvote"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
             </svg>
           </button>
         </div>
 
-        {/* Added By */}
-        <div className="hidden md:flex items-center gap-2 text-sm text-gray-500 min-w-[100px]">
+        {/* Added By - Hidden on mobile */}
+        <div className="hidden lg:flex items-center gap-2 text-sm text-gray-500 min-w-[100px] flex-shrink-0">
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
           </svg>
@@ -101,17 +124,17 @@ export function QueueList() {
   return (
     <div className="space-y-4">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 mb-4 md:mb-6">
         <div>
-          <h2 className="text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>
+          <h2 className="text-xl sm:text-2xl font-bold text-white" style={{ fontFamily: 'Syne, sans-serif' }}>
             Up Next
           </h2>
-          <p className="text-gray-400 text-sm mt-1">
+          <p className="text-gray-400 text-xs sm:text-sm mt-1">
             {queue.length} {queue.length === 1 ? 'song' : 'songs'} in queue
           </p>
         </div>
-        <div className="flex items-center gap-2 text-sm text-gray-400">
-          <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="hidden sm:flex items-center gap-2 text-xs sm:text-sm text-gray-400">
+          <svg className="w-3 h-3 sm:w-4 sm:h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
           </svg>
           <span>Sorted by votes</span>

@@ -1,9 +1,19 @@
 'use client';
 
-import { useState, useEffect } from 'react';
-import { useJukeboxStore, Song } from '@/store/useJukeboxStore';
+import { useState } from 'react';
+import { songsApi, adminApi } from '@/lib/api';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+
+interface Song {
+  spotify_id: string;
+  title: string;
+  artist: string;
+  album: string;
+  album_art_url?: string;
+  duration_ms: number;
+  is_explicit: boolean;
+}
 
 function SearchResult({ song, onAdd }: { song: Song; onAdd: () => void }) {
   const [isAdding, setIsAdding] = useState(false);
@@ -23,7 +33,7 @@ function SearchResult({ song, onAdd }: { song: Song; onAdd: () => void }) {
     >
       <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0 shadow-lg">
         <Image
-          src={song.albumArt || song.album_art_url || '/placeholder-album.png'}
+          src={song.album_art_url || '/placeholder-album.png'}
           alt={song.album}
           fill
           className="object-cover"
@@ -69,77 +79,53 @@ function SearchResult({ song, onAdd }: { song: Song; onAdd: () => void }) {
   );
 }
 
-export function SearchBar() {
-  const { 
-    searchQuery, 
-    setSearchQuery, 
-    searchResults, 
-    isSearching, 
-    requestSong,
-    requestsRemaining,
-    maxRequestsPerDay,
-    queueEnabled,
-    fetchUserStatus,
-    searchSongs,
-  } = useJukeboxStore();
-  
+export function AdminSearchBar({ onSongAdded }: { onSongAdded: () => void }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<Song[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
   const [showError, setShowError] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  // Load all songs when search bar is focused (for playlist mode)
-  useEffect(() => {
-    if (isFocused && !searchQuery) {
-      searchSongs('');
+  const hasDropdown = searchQuery && searchResults.length > 0;
+
+  const handleSearch = async (query: string) => {
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
     }
-  }, [isFocused, searchQuery, searchSongs]);
+
+    setIsSearching(true);
+    try {
+      const response = await songsApi.search(query);
+      setSearchResults(response.data.results);
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.error || 'Failed to search songs');
+      setShowError(true);
+      setTimeout(() => setShowError(false), 3000);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
   const handleAddSong = async (song: Song) => {
-    if (requestsRemaining <= 0) {
-      setErrorMessage('You have reached your daily request limit');
-      setShowError(true);
-      setTimeout(() => setShowError(false), 3000);
-      return;
-    }
-
-    if (!song.spotify_id) {
-      setErrorMessage('Invalid song');
-      setShowError(true);
-      setTimeout(() => setShowError(false), 3000);
-      return;
-    }
-
-    const result = await requestSong(song.spotify_id);
-    
-    if (result.success) {
+    try {
+      await adminApi.addSong(song.spotify_id);
       setShowSuccess(true);
       setTimeout(() => setShowSuccess(false), 2000);
-      await fetchUserStatus();
-      // Clear search query to close dropdown
       setSearchQuery('');
-    } else {
-      setErrorMessage(result.error || 'Failed to add song');
+      setSearchResults([]);
+      onSongAdded();
+    } catch (error: any) {
+      setErrorMessage(error.response?.data?.error || 'Failed to add song');
       setShowError(true);
       setTimeout(() => setShowError(false), 3000);
     }
   };
 
-  if (!queueEnabled) {
-    return (
-      <div className="glass rounded-2xl p-6 text-center">
-        <div className="flex items-center justify-center gap-3 text-amber-400">
-          <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-          </svg>
-          <span className="font-medium">Song requests are currently paused</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative">
+    <div className={`relative ${hasDropdown ? 'z-50' : ''}`}>
       {/* Success Toast */}
       <AnimatePresence>
         {showSuccess && (
@@ -153,7 +139,7 @@ export function SearchBar() {
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
-              <span className="font-medium">Song requested!</span>
+              <span className="font-medium">Song added to queue!</span>
             </div>
           </motion.div>
         )}
@@ -202,49 +188,30 @@ export function SearchBar() {
         <input
           type="text"
           value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          onChange={(e) => {
+            setSearchQuery(e.target.value);
+            handleSearch(e.target.value);
+          }}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-          placeholder="Search for a song to add..."
-          disabled={requestsRemaining <= 0}
-          className="input-search pl-14 pr-32 disabled:opacity-50 disabled:cursor-not-allowed"
+          placeholder="Search for a song to add (admin)..."
+          className="input-search pl-14 pr-4"
         />
-
-        {/* Song Limit Badge */}
-        <div className="absolute inset-y-0 right-0 pr-4 flex items-center">
-          <div className={`px-3 py-1 rounded-full text-sm font-medium ${
-            requestsRemaining > 0 
-              ? 'bg-gold-500/20 text-gold-400' 
-              : 'bg-red-500/20 text-red-400'
-          }`}>
-            {requestsRemaining > 0 ? `${requestsRemaining}/${maxRequestsPerDay} remaining` : `0/${maxRequestsPerDay} remaining`}
-          </div>
-        </div>
       </div>
 
       {/* Search Results Dropdown */}
       <AnimatePresence>
-        {searchResults.length > 0 && (
+        {searchQuery && searchResults.length > 0 && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 10 }}
-            className="absolute top-full left-0 right-0 mt-2 glass rounded-2xl overflow-hidden z-40 max-h-80 overflow-y-auto"
+            className="absolute top-full left-0 right-0 mt-2 glass rounded-2xl overflow-hidden z-[100] max-h-80 overflow-y-auto shadow-2xl"
           >
             <div className="p-2">
-              {searchQuery && (
-                <p className="text-xs text-gray-400 px-2 py-1 mb-1">
-                  {searchResults.length} result{searchResults.length !== 1 ? 's' : ''} found
-                </p>
-              )}
-              {!searchQuery && (
-                <p className="text-xs text-gray-400 px-2 py-1 mb-1">
-                  Available songs ({searchResults.length})
-                </p>
-              )}
               {searchResults.map((song) => (
                 <SearchResult 
-                  key={song.spotify_id || song.id} 
+                  key={song.spotify_id} 
                   song={song} 
                   onAdd={() => handleAddSong(song)} 
                 />
@@ -253,13 +220,7 @@ export function SearchBar() {
           </motion.div>
         )}
       </AnimatePresence>
-
-      {/* Hint Text */}
-      {requestsRemaining <= 0 && (
-        <p className="mt-3 text-center text-sm text-amber-400">
-          You&apos;ve reached your daily request limit. Come back tomorrow!
-        </p>
-      )}
     </div>
   );
 }
+

@@ -2,8 +2,20 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import { getVenueSlug, getVenueName } from '@/lib/venue';
 
 export function Header() {
+  const [venueName, setVenueName] = useState<string>('Jukebox');
+
+  useEffect(() => {
+    const fetchVenueName = async () => {
+      const name = await getVenueName();
+      setVenueName(name);
+    };
+    fetchVenueName();
+  }, []);
+
   return (
     <header className="relative z-50">
       <div className="glass border-b border-gold-400/10">
@@ -30,9 +42,9 @@ export function Header() {
                   className="text-xl md:text-2xl font-bold gradient-text"
                   style={{ fontFamily: 'Syne, sans-serif' }}
                 >
-                  Rand Jukebox
+                  {venueName} Jukebox
                 </h1>
-                <p className="text-xs text-gray-400 hidden sm:block">Vanderbilt&apos;s Community Music Queue</p>
+                <p className="text-xs text-gray-400 hidden sm:block">Community Music Queue</p>
               </div>
             </Link>
 

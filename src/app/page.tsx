@@ -1,13 +1,27 @@
 'use client';
 
+import { useEffect } from 'react';
 import { Header } from '@/components/Header';
 import { NowPlaying } from '@/components/NowPlaying';
 import { SearchBar } from '@/components/SearchBar';
 import { QueueList } from '@/components/QueueList';
 import { Footer } from '@/components/Footer';
 import { motion } from 'framer-motion';
+import { useJukeboxStore } from '@/store/useJukeboxStore';
+import { getUserIdentifier } from '@/lib/fingerprint';
 
 export default function Home() {
+  const initializeSocket = useJukeboxStore((state) => state.initializeSocket);
+  const songsPlayedToday = useJukeboxStore((state) => state.songsPlayedToday);
+  const activeUsers = useJukeboxStore((state) => state.activeUsers);
+
+  useEffect(() => {
+    // Initialize user identifier
+    getUserIdentifier();
+    
+    // Initialize socket connection and fetch data
+    initializeSocket();
+  }, [initializeSocket]);
   return (
     <div className="min-h-screen flex flex-col">
       {/* Decorative Background Elements */}
@@ -50,74 +64,74 @@ export default function Home() {
           </motion.section>
 
           {/* Main Content Grid */}
-          <div className="grid lg:grid-cols-5 gap-8">
-            {/* Now Playing - Takes up 2 columns on large screens */}
+          <div className="grid lg:grid-cols-5 gap-4 md:gap-8">
+            {/* Now Playing - Takes up 2 columns on large screens, full width on mobile */}
             <motion.section
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.2 }}
-              className="lg:col-span-2"
+              className="lg:col-span-2 order-1"
             >
               <NowPlaying />
               
               {/* Stats Cards */}
-              <div className="grid grid-cols-2 gap-4 mt-6">
+              <div className="grid grid-cols-2 gap-3 md:gap-4 mt-4 md:mt-6">
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="glass rounded-2xl p-4 text-center"
+                  className="glass rounded-2xl p-3 md:p-4 text-center"
                 >
-                  <div className="text-3xl font-bold gradient-text" style={{ fontFamily: 'Syne, sans-serif' }}>156</div>
-                  <div className="text-sm text-gray-400 mt-1">Songs Today</div>
+                  <div className="text-2xl md:text-3xl font-bold gradient-text" style={{ fontFamily: 'Syne, sans-serif' }}>{songsPlayedToday}</div>
+                  <div className="text-xs md:text-sm text-gray-400 mt-1">Songs Today</div>
                 </motion.div>
                 <motion.div
                   whileHover={{ scale: 1.02 }}
-                  className="glass rounded-2xl p-4 text-center"
+                  className="glass rounded-2xl p-3 md:p-4 text-center"
                 >
-                  <div className="text-3xl font-bold gradient-text" style={{ fontFamily: 'Syne, sans-serif' }}>89</div>
-                  <div className="text-sm text-gray-400 mt-1">Active Users</div>
+                  <div className="text-2xl md:text-3xl font-bold gradient-text" style={{ fontFamily: 'Syne, sans-serif' }}>{activeUsers}</div>
+                  <div className="text-xs md:text-sm text-gray-400 mt-1">Active Users</div>
                 </motion.div>
               </div>
 
-              {/* How It Works */}
+              {/* How It Works - Hidden on mobile, shown on md+ */}
               <motion.div
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
-                className="glass rounded-2xl p-6 mt-6"
+                className="hidden md:block glass rounded-2xl p-4 md:p-6 mt-4 md:mt-6"
               >
-                <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
-                  <svg className="w-5 h-5 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <h3 className="text-base md:text-lg font-semibold text-white mb-3 md:mb-4 flex items-center gap-2">
+                  <svg className="w-4 h-4 md:w-5 md:h-5 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   How It Works
                 </h3>
-                <ol className="space-y-3 text-sm text-gray-300">
-                  <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">1</span>
+                <ol className="space-y-2 md:space-y-3 text-xs md:text-sm text-gray-300">
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">1</span>
                     <span>Search for a song using the search bar above</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">2</span>
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">2</span>
                     <span>Add it to the queue (1 song per person)</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">3</span>
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">3</span>
                     <span>Vote on songs to move them up the queue</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <span className="flex-shrink-0 w-6 h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">4</span>
+                  <li className="flex items-start gap-2 md:gap-3">
+                    <span className="flex-shrink-0 w-5 h-5 md:w-6 md:h-6 rounded-full bg-gold-400/20 text-gold-400 flex items-center justify-center text-xs font-bold">4</span>
                     <span>Enjoy the music while you dine!</span>
                   </li>
                 </ol>
               </motion.div>
             </motion.section>
 
-            {/* Queue Section - Takes up 3 columns */}
+            {/* Queue Section - Takes up 3 columns on large, full width on mobile */}
             <motion.section
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ delay: 0.3 }}
-              className="lg:col-span-3"
+              className="lg:col-span-3 order-2"
             >
               <QueueList />
             </motion.section>
