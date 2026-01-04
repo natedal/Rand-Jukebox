@@ -21,7 +21,8 @@ export function NowPlaying() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const currentTime = Math.floor((progress / 100) * currentSong.duration);
+  const duration = currentSong.duration || 0;
+  const currentTime = Math.floor((progress / 100) * duration);
 
   return (
     <motion.div
@@ -151,7 +152,7 @@ export function NowPlaying() {
           </div>
           <div className="flex justify-between mt-2 text-sm text-gray-400 font-mono">
             <span>{formatTime(currentTime)}</span>
-            <span>{formatTime(currentSong.duration)}</span>
+            <span>{formatTime(duration)}</span>
           </div>
         </div>
       </div>
