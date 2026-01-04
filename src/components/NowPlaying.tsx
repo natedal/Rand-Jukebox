@@ -79,8 +79,8 @@ export function NowPlaying() {
             {/* Album Cover */}
             <div className="relative w-36 h-36 md:w-44 md:h-44 rounded-2xl overflow-hidden shadow-2xl ring-2 ring-gold-400/30 group-hover:ring-gold-400/60 transition-all duration-300">
               <Image
-                src={currentSong.albumArt}
-                alt={currentSong.album}
+                src={currentSong.albumArt || '/placeholder-album.png'}
+                alt={currentSong.album || 'Album cover'}
                 fill
                 className="object-cover"
                 priority
