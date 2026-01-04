@@ -53,15 +53,16 @@ function isOriginAllowed(origin) {
     return true;
   }
   
-  // Check subdomain matches for production domain
+  // Check subdomain matches for production domain (e.g., *.jukeb.ink)
   const frontendDomain = frontendUrl.replace(/^https?:\/\//, '').split('/')[0];
   if (frontendDomain && !frontendDomain.includes('localhost')) {
     const originDomain = origin.replace(/^https?:\/\//, '').split('/')[0];
-    // Extract base domain (e.g., 'jukebox.app' from 'venue1.jukebox.app')
+    // Extract base domain (e.g., 'jukeb.ink' from 'venue1.jukeb.ink')
     const domainParts = frontendDomain.split('.');
     if (domainParts.length >= 2) {
       const baseDomain = domainParts.slice(-2).join('.');
-      if (originDomain.endsWith('.' + baseDomain) || originDomain === baseDomain) {
+      // Allow exact match or subdomain match (e.g., venue1.jukeb.ink, jukeb.ink)
+      if (originDomain === baseDomain || originDomain.endsWith('.' + baseDomain)) {
         return true;
       }
     }

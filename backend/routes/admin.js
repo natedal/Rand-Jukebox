@@ -1410,5 +1410,192 @@ router.post('/filters/playlist/import', authenticateAdmin, async (req, res) => {
   }
 });
 
+/**
+ * POST /api/admin/venues
+ * Create a new venue
+ * Requires admin authentication (any venue admin can create venues)
+ */
+router.post('/venues', authenticateAdmin, async (req, res) => {
+  const client = await getPool().connect();
+  
+  try {
+    const { slug, name, admin_password } = req.body;
+
+    if (!slug || !name) {
+      return res.status(400).json({ error: 'slug and name are required' });
+    }
+
+    // Validate slug format: alphanumeric + hyphens, lowercase
+    const slugRegex = /^[a-z0-9-]+$/;
+    if (!slugRegex.test(slug)) {
+      return res.status(400).json({ 
+        error: 'slug must contain only lowercase letters, numbers, and hyphens' 
+      });
+    }
+
+    // Validate slug length
+    if (slug.length < 2 || slug.length > 50) {
+      return res.status(400).json({ 
+        error: 'slug must be between 2 and 50 characters' 
+      });
+    }
+
+    await client.query('BEGIN');
+
+    // Check if venue already exists
+    const existingVenue = await client.query(
+      'SELECT id FROM venues WHERE slug = $1',
+      [slug]
+    );
+
+    if (existingVenue.rows.length > 0) {
+      await client.query('ROLLBACK');
+      return res.status(409).json({ error: 'Venue with this slug already exists' });
+    }
+
+    // Create venue
+    const venueResult = await client.query(
+      'INSERT INTO venues (slug, name) VALUES ($1, $2) RETURNING id, slug, name, created_at',
+      [slug, name]
+    );
+
+    const venue = venueResult.rows[0];
+    const venueId = venue.id;
+
+    // Initialize admin settings with provided password or default
+    const adminPassword = admin_password || process.env.ADMIN_PASSWORD || 'changeme';
+    const adminPasswordHash = await bcrypt.hash(adminPassword, 10);
+
+    await client.query(
+      `INSERT INTO admin_settings (venue_id, admin_password_hash) 
+       VALUES ($1, $2)`,
+      [venueId, adminPasswordHash]
+    );
+
+    await client.query('COMMIT');
+
+    console.log(`✅ Created new venue: ${name} (${slug})`);
+
+    res.status(201).json({
+      success: true,
+      venue: {
+        id: venue.id,
+        slug: venue.slug,
+        name: venue.name,
+        created_at: venue.created_at,
+      },
+      message: `Venue created successfully. Admin password: ${admin_password ? 'as provided' : adminPassword}`,
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error creating venue:', error);
+    res.status(500).json({ error: 'Failed to create venue' });
+  } finally {
+    client.release();
+  }
+});
+
+/**
+ * GET /api/admin/venues
+ * List all venues
+ * Requires admin authentication
+ */
+router.get('/venues', authenticateAdmin, async (req, res) => {
+  try {
+    const pool = getPool();
+    
+    const result = await pool.query(
+      'SELECT id, slug, name, created_at FROM venues ORDER BY created_at DESC'
+    );
+
+    res.json({
+      success: true,
+      venues: result.rows,
+    });
+  } catch (error) {
+    console.error('Error fetching venues:', error);
+    res.status(500).json({ error: 'Failed to fetch venues' });
+  }
+});
+
+/**
+ * GET /api/admin/venues/:slug
+ * Get venue details by slug
+ * Requires admin authentication
+ */
+router.get('/venues/:slug', authenticateAdmin, async (req, res) => {
+  try {
+    const { slug } = req.params;
+    const pool = getPool();
+    
+    const result = await pool.query(
+      'SELECT id, slug, name, created_at FROM venues WHERE slug = $1',
+      [slug]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Venue not found' });
+    }
+
+    res.json({
+      success: true,
+      venue: result.rows[0],
+    });
+  } catch (error) {
+    console.error('Error fetching venue:', error);
+    res.status(500).json({ error: 'Failed to fetch venue' });
+  }
+});
+
+/**
+ * PUT /api/admin/venues/:slug
+ * Update venue name
+ * Requires admin authentication
+ */
+router.put('/venues/:slug', authenticateAdmin, async (req, res) => {
+  const client = await getPool().connect();
+  
+  try {
+    const { slug } = req.params;
+    const { name } = req.body;
+
+    if (!name || name.trim().length === 0) {
+      return res.status(400).json({ error: 'name is required' });
+    }
+
+    await client.query('BEGIN');
+
+    // Check if venue exists
+    const venueResult = await client.query(
+      'SELECT id FROM venues WHERE slug = $1',
+      [slug]
+    );
+
+    if (venueResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Venue not found' });
+    }
+
+    // Update venue name
+    const updateResult = await client.query(
+      'UPDATE venues SET name = $1 WHERE slug = $2 RETURNING id, slug, name, created_at',
+      [name.trim(), slug]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({
+      success: true,
+      venue: updateResult.rows[0],
+    });
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating venue:', error);
+    res.status(500).json({ error: 'Failed to update venue' });
+  } finally {
+    client.release();
+  }
+});
+
 export default router;
 

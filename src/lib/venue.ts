@@ -22,7 +22,7 @@ export function getVenueSlug(): string {
     return process.env.NEXT_PUBLIC_VENUE_SLUG || 'rand';
   }
   
-  // Strategy 1: Subdomain detection (for production domains)
+  // Strategy 1: Subdomain detection (for production domains like *.jukeb.ink)
   // Check if we have a subdomain (at least 3 parts: subdomain.domain.tld)
   if (hostParts.length >= 3) {
     const subdomain = hostParts[0];
@@ -40,6 +40,12 @@ export function getVenueSlug(): string {
     if (firstPart && firstPart !== 'localhost' && firstPart !== 'www' && firstPart !== 'api') {
       return firstPart;
     }
+  }
+  
+  // Special handling for jukeb.ink root domain
+  if (hostname === 'jukeb.ink' || hostname === 'www.jukeb.ink') {
+    // Root domain - use environment variable or default to 'rand'
+    return process.env.NEXT_PUBLIC_VENUE_SLUG || 'rand';
   }
 
   // Strategy 2: Path (e.g., /cafemogador)
