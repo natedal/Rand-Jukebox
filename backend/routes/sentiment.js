@@ -171,6 +171,8 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
     // Cast timestamps to DATE for comparison
     // Note: Timestamps are stored as TIMESTAMP WITHOUT TIME ZONE, so we compare dates directly
     // Added NULL check for requested_at to prevent errors
+    // Note: DISTINCT not needed since s.id is unique, but kept for safety
+    // ORDER BY expression added to SELECT to satisfy PostgreSQL DISTINCT requirement
     const result = await pool.query(`
       SELECT DISTINCT
         s.id,
@@ -181,7 +183,8 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
         s.album_art_url,
         s.requested_at,
         s.played_at,
-        s.requested_by
+        s.requested_by,
+        COALESCE(s.played_at, s.requested_at) as sort_date
       FROM songs s
       WHERE s.venue_id = $1
         AND s.requested_at IS NOT NULL
@@ -189,8 +192,7 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
           s.requested_at::DATE = $2::DATE
           OR (s.played_at IS NOT NULL AND s.played_at::DATE = $2::DATE)
         )
-      ORDER BY 
-        COALESCE(s.played_at, s.requested_at) DESC
+      ORDER BY sort_date DESC
     `, [venueId, date]);
 
     const songs = result.rows.map(row => ({
