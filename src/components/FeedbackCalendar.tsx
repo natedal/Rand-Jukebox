@@ -74,10 +74,12 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           .rdp-months {
             display: flex;
             justify-content: center;
+            width: 100%;
           }
 
           .rdp-month {
-            margin: 0;
+            margin: 0 auto;
+            width: 100%;
           }
 
           .rdp-caption {
@@ -139,6 +141,7 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             max-width: none;
             border-collapse: separate;
             border-spacing: 4px;
+            margin: 0 auto;
           }
 
           .rdp-head_cell {
@@ -244,7 +247,7 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             box-shadow: 0 0 8px rgba(207, 174, 69, 0.8);
           }
         `}} />
-        <div className="relative z-10">
+        <div className="relative z-10 flex justify-center">
           <DayPicker
           mode="single"
           selected={selectedDate}
