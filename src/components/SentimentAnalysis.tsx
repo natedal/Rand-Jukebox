@@ -474,7 +474,10 @@ export function SentimentAnalysis() {
                 <div className="text-center py-12">
                   <div className="text-red-400 mb-2">{songsError}</div>
                   <button
-                    onClick={() => fetchSongsByDate(selectedDate)}
+                    onClick={() => {
+                      const dateStr = selectedDate.toISOString().split('T')[0];
+                      fetchSongsByDate(dateStr);
+                    }}
                     className="mt-4 px-4 py-2 rounded-lg bg-gold-400/20 text-gold-400 hover:bg-gold-400/30 transition-all text-sm"
                   >
                     Retry
