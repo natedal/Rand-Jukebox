@@ -31,7 +31,9 @@ export function getSocket(): Socket {
       // If venue not found error, disconnect socket to prevent further attempts
       if (data.message?.includes('Venue not found')) {
         console.error('Venue not found via socket - disconnecting');
-        socket.disconnect();
+        if (socket) {
+          socket.disconnect();
+        }
       }
     });
   }
