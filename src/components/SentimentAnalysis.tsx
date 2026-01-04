@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { sentimentApi } from '@/lib/api';
+import { FeedbackCalendar } from './FeedbackCalendar';
 import Image from 'next/image';
 
 type Tab = 'queue' | 'top-songs' | 'feedback';
@@ -67,21 +68,21 @@ export function SentimentAnalysis() {
   const [topSongsError, setTopSongsError] = useState<string | null>(null);
   
   // Date-based feedback state
-  const [selectedDate, setSelectedDate] = useState<string>(() => {
-    // Default to today's date in YYYY-MM-DD format
-    const today = new Date();
-    return today.toISOString().split('T')[0];
-  });
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
   const [songsByDate, setSongsByDate] = useState<SongByDate[]>([]);
   const [isLoadingSongs, setIsLoadingSongs] = useState(false);
   const [songsError, setSongsError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [datesWithFeedback, setDatesWithFeedback] = useState<string[]>([]);
+  const [isLoadingDates, setIsLoadingDates] = useState(false);
 
   useEffect(() => {
     if (activeTab === 'queue') {
       fetchQueueRatings();
     } else if (activeTab === 'top-songs') {
       fetchTopSongs();
+    } else if (activeTab === 'feedback') {
+      fetchDatesWithFeedback();
     }
   }, [activeTab]);
 
@@ -93,7 +94,8 @@ export function SentimentAnalysis() {
 
   useEffect(() => {
     if (activeTab === 'feedback' && selectedDate) {
-      fetchSongsByDate(selectedDate);
+      const dateStr = selectedDate.toISOString().split('T')[0];
+      fetchSongsByDate(dateStr);
     }
   }, [activeTab, selectedDate]);
 
@@ -126,6 +128,20 @@ export function SentimentAnalysis() {
       setTopSongs([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchDatesWithFeedback = async () => {
+    setIsLoadingDates(true);
+    try {
+      const response = await sentimentApi.getDatesWithFeedback();
+      setDatesWithFeedback(response.data.dates || []);
+    } catch (error: any) {
+      console.error('Error fetching dates with feedback:', error);
+      // Don't show error to user, just log it
+      setDatesWithFeedback([]);
+    } finally {
+      setIsLoadingDates(false);
     }
   };
 
@@ -424,17 +440,15 @@ export function SentimentAnalysis() {
             </div>
           ) : (
             <div>
-              {/* Date Picker */}
+              {/* Calendar */}
               <div className="mb-6">
-                <label htmlFor="date-picker" className="block text-sm font-medium text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-gray-300 mb-4">
                   Select Date
                 </label>
-                <input
-                  id="date-picker"
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  className="px-4 py-2 rounded-lg bg-midnight-800 border border-midnight-700 text-white focus:outline-none focus:ring-2 focus:ring-gold-400/50"
+                <FeedbackCalendar
+                  selectedDate={selectedDate}
+                  onDateSelect={(date) => setSelectedDate(date)}
+                  datesWithFeedback={datesWithFeedback}
                 />
               </div>
 
@@ -468,7 +482,7 @@ export function SentimentAnalysis() {
                 </div>
               ) : songsByDate.length === 0 ? (
                 <div className="text-center py-12 text-gray-400">
-                  <p>No songs found for {new Date(selectedDate).toLocaleDateString()}</p>
+                  <p>No songs found for {selectedDate.toLocaleDateString()}</p>
                 </div>
               ) : (
                 <div className="space-y-3 max-h-[600px] overflow-y-auto">

@@ -147,6 +147,13 @@ router.get('/top-songs', authenticateAdmin, async (req, res) => {
 router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
   try {
     const { date } = req.query;
+    
+    // Validate venue is set
+    if (!req.venue || !req.venue.id) {
+      console.error('Venue not set in request');
+      return res.status(500).json({ error: 'Venue configuration error' });
+    }
+    
     const venueId = req.venue.id;
     const pool = getPool();
 
@@ -163,6 +170,7 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
     // Query songs where requested_at OR played_at falls on the selected date
     // Extract date part from timestamps for comparison
     // Note: Timestamps are stored as TIMESTAMP WITHOUT TIME ZONE, so we compare dates directly
+    // Added NULL check for requested_at to prevent errors
     const result = await pool.query(`
       SELECT DISTINCT
         s.id,
@@ -176,6 +184,7 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
         s.requested_by
       FROM songs s
       WHERE s.venue_id = $1
+        AND s.requested_at IS NOT NULL
         AND (
           DATE(s.requested_at) = $2::DATE
           OR (s.played_at IS NOT NULL AND DATE(s.played_at) = $2::DATE)
@@ -203,7 +212,64 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
     });
   } catch (error) {
     console.error('Error fetching songs by date:', error);
-    res.status(500).json({ error: 'Failed to fetch songs by date' });
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      venueId: req.venue?.id,
+      date: req.query?.date,
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch songs by date',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
+});
+
+/**
+ * GET /api/admin/sentiment/dates-with-feedback
+ * Get all dates that have songs with feedback
+ */
+router.get('/dates-with-feedback', authenticateAdmin, async (req, res) => {
+  try {
+    const venueId = req.venue.id;
+    const pool = getPool();
+
+    // Query to find all dates that have songs with feedback
+    // Check both requested_at and played_at dates
+    const result = await pool.query(`
+      SELECT DISTINCT DATE(s.requested_at) as date
+      FROM songs s
+      INNER JOIN song_feedback sf ON s.id = sf.song_id
+      WHERE s.venue_id = $1 AND s.requested_at IS NOT NULL
+      UNION
+      SELECT DISTINCT DATE(s.played_at) as date
+      FROM songs s
+      INNER JOIN song_feedback sf ON s.id = sf.song_id
+      WHERE s.venue_id = $1 AND s.played_at IS NOT NULL
+      ORDER BY date DESC
+    `, [venueId]);
+
+    const dates = result.rows.map(row => {
+      // Convert date to YYYY-MM-DD format
+      const date = new Date(row.date);
+      return date.toISOString().split('T')[0];
+    });
+
+    res.json({
+      success: true,
+      dates,
+    });
+  } catch (error) {
+    console.error('Error fetching dates with feedback:', error);
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      venueId: req.venue?.id,
+    });
+    res.status(500).json({ 
+      error: 'Failed to fetch dates with feedback',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
   }
 });
 

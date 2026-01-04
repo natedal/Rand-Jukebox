@@ -330,6 +330,13 @@ export const sentimentApi = {
       headers: { Authorization: `Bearer ${token}` },
     });
   },
+  getDatesWithFeedback: () => {
+    if (typeof window === 'undefined') return Promise.reject('Not in browser');
+    const token = localStorage.getItem('admin_token');
+    return api.get('/api/admin/sentiment/dates-with-feedback', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
   getSongFeedback: (songId: string) => {
     if (typeof window === 'undefined') return Promise.reject('Not in browser');
     const token = localStorage.getItem('admin_token');
