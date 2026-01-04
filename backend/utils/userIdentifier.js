@@ -21,6 +21,14 @@ export function getUserIdentifier(req) {
 }
 
 /**
+ * Get username from request headers
+ * Returns username if provided, otherwise returns null
+ */
+export function getUsername(req) {
+  return req.headers['x-user-username'] || null;
+}
+
+/**
  * Hash a string (for consistent user identifiers)
  */
 export function hashString(str) {

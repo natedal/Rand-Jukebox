@@ -1,29 +1,62 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Header } from '@/components/Header';
 import { NowPlaying } from '@/components/NowPlaying';
 import { SearchBar } from '@/components/SearchBar';
 import { QueueList } from '@/components/QueueList';
 import { Footer } from '@/components/Footer';
+import { UsernameModal } from '@/components/UsernameModal';
 import { motion } from 'framer-motion';
 import { useJukeboxStore } from '@/store/useJukeboxStore';
-import { getUserIdentifier } from '@/lib/fingerprint';
+import { getUserIdentifier, hasUsername } from '@/lib/fingerprint';
 
 export default function Home() {
   const initializeSocket = useJukeboxStore((state) => state.initializeSocket);
   const songsPlayedToday = useJukeboxStore((state) => state.songsPlayedToday);
   const activeUsers = useJukeboxStore((state) => state.activeUsers);
+  const [showUsernameModal, setShowUsernameModal] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   useEffect(() => {
+    // Check if username is set
+    if (!hasUsername()) {
+      setShowUsernameModal(true);
+      return;
+    }
+
     // Initialize user identifier
     getUserIdentifier();
     
     // Initialize socket connection and fetch data
     initializeSocket();
+    setIsInitialized(true);
   }, [initializeSocket]);
+
+  const handleUsernameSet = (username: string) => {
+    setShowUsernameModal(false);
+    // Initialize user identifier
+    getUserIdentifier();
+    // Initialize socket connection and fetch data
+    initializeSocket();
+    setIsInitialized(true);
+  };
+
+  // Don't render main app until username is set
+  if (!isInitialized) {
+    return (
+      <>
+        <UsernameModal isOpen={showUsernameModal} onClose={handleUsernameSet} />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400"></div>
+        </div>
+      </>
+    );
+  }
   return (
-    <div className="min-h-screen flex flex-col">
+    <>
+      <UsernameModal isOpen={showUsernameModal} onClose={handleUsernameSet} />
+      <div className="min-h-screen flex flex-col">
       {/* Decorative Background Elements */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-0 left-1/4 w-96 h-96 bg-gold-400/5 rounded-full blur-3xl" />
@@ -141,6 +174,7 @@ export default function Home() {
 
       <Footer />
     </div>
+    </>
   );
 }
 

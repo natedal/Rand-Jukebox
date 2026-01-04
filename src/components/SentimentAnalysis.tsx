@@ -42,6 +42,18 @@ interface SongFeedback {
   updated_at?: string;
 }
 
+interface SongByDate {
+  id: string;
+  spotify_id: string;
+  title: string;
+  artist: string;
+  album: string;
+  album_art_url?: string;
+  requested_at: string;
+  played_at?: string;
+  requested_by?: string;
+}
+
 export function SentimentAnalysis() {
   const [activeTab, setActiveTab] = useState<Tab>('queue');
   const [queueRatings, setQueueRatings] = useState<QueueSongRating[]>([]);
@@ -53,6 +65,17 @@ export function SentimentAnalysis() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [queueError, setQueueError] = useState<string | null>(null);
   const [topSongsError, setTopSongsError] = useState<string | null>(null);
+  
+  // Date-based feedback state
+  const [selectedDate, setSelectedDate] = useState<string>(() => {
+    // Default to today's date in YYYY-MM-DD format
+    const today = new Date();
+    return today.toISOString().split('T')[0];
+  });
+  const [songsByDate, setSongsByDate] = useState<SongByDate[]>([]);
+  const [isLoadingSongs, setIsLoadingSongs] = useState(false);
+  const [songsError, setSongsError] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
 
   useEffect(() => {
     if (activeTab === 'queue') {
@@ -67,6 +90,12 @@ export function SentimentAnalysis() {
       fetchSongFeedback(selectedSongId);
     }
   }, [selectedSongId, activeTab]);
+
+  useEffect(() => {
+    if (activeTab === 'feedback' && selectedDate) {
+      fetchSongsByDate(selectedDate);
+    }
+  }, [activeTab, selectedDate]);
 
   const fetchQueueRatings = async () => {
     setIsLoading(true);
@@ -97,6 +126,24 @@ export function SentimentAnalysis() {
       setTopSongs([]);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const fetchSongsByDate = async (date: string) => {
+    setIsLoadingSongs(true);
+    setSongsError(null);
+    setSelectedSongId(null);
+    setSongFeedback([]);
+    try {
+      const response = await sentimentApi.getSongsByDate(date);
+      setSongsByDate(response.data.songs || []);
+    } catch (error: any) {
+      console.error('Error fetching songs by date:', error);
+      const errorMsg = error.response?.data?.error || error.message || 'Failed to fetch songs';
+      setSongsError(errorMsg);
+      setSongsByDate([]);
+    } finally {
+      setIsLoadingSongs(false);
     }
   };
 
@@ -330,7 +377,7 @@ export function SentimentAnalysis() {
       {activeTab === 'feedback' && (
         <div>
           <p className="text-gray-400 text-sm mb-4">
-            View user feedback comments for songs. Select a song from the queue to view its feedback.
+            View user feedback comments for songs. Select a day from the calendar, then choose a song from that day to view its feedback.
           </p>
 
           {selectedSongId ? (
@@ -377,47 +424,105 @@ export function SentimentAnalysis() {
             </div>
           ) : (
             <div>
-              <p className="text-gray-400 text-sm mb-4">
-                Click on a song from the queue management panel to view its feedback, or enter a song ID:
-              </p>
-              <div className="flex gap-2 mb-4">
+              {/* Date Picker */}
+              <div className="mb-6">
+                <label htmlFor="date-picker" className="block text-sm font-medium text-gray-300 mb-2">
+                  Select Date
+                </label>
                 <input
-                  type="text"
-                  placeholder="Enter song ID (UUID or Spotify ID)"
-                  className="flex-1 px-4 py-2 rounded-lg bg-midnight-800 border border-midnight-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold-400/50"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      const songId = (e.target as HTMLInputElement).value.trim();
-                      if (songId) {
-                        if (validateSongId(songId)) {
-                          setSelectedSongId(songId);
-                        } else {
-                          setErrorMessage('Invalid song ID format. Please use a valid UUID or Spotify ID from the queue.');
-                        }
-                      }
-                    }
-                  }}
+                  id="date-picker"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="px-4 py-2 rounded-lg bg-midnight-800 border border-midnight-700 text-white focus:outline-none focus:ring-2 focus:ring-gold-400/50"
                 />
-                <button
-                  onClick={() => {
-                    const input = document.querySelector('input[placeholder="Enter song ID (UUID or Spotify ID)"]') as HTMLInputElement;
-                    const songId = input?.value.trim();
-                    if (songId) {
-                      if (validateSongId(songId)) {
-                        setSelectedSongId(songId);
-                      } else {
-                        setErrorMessage('Invalid song ID format. Please use a valid UUID or Spotify ID from the queue.');
-                      }
-                    }
-                  }}
-                  className="px-4 py-2 rounded-lg bg-gold-400 text-midnight-900 font-semibold hover:bg-gold-500 transition-all"
-                >
-                  View Feedback
-                </button>
               </div>
-              {errorMessage && !selectedSongId && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-500/30 text-red-400 text-sm">
-                  {errorMessage}
+
+              {/* Search Filter */}
+              {songsByDate.length > 0 && (
+                <div className="mb-4">
+                  <input
+                    type="text"
+                    placeholder="Search songs..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full px-4 py-2 rounded-lg bg-midnight-800 border border-midnight-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-gold-400/50"
+                  />
+                </div>
+              )}
+
+              {/* Songs List */}
+              {isLoadingSongs ? (
+                <div className="text-center py-12">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-gold-400 mx-auto"></div>
+                </div>
+              ) : songsError ? (
+                <div className="text-center py-12">
+                  <div className="text-red-400 mb-2">{songsError}</div>
+                  <button
+                    onClick={() => fetchSongsByDate(selectedDate)}
+                    className="mt-4 px-4 py-2 rounded-lg bg-gold-400/20 text-gold-400 hover:bg-gold-400/30 transition-all text-sm"
+                  >
+                    Retry
+                  </button>
+                </div>
+              ) : songsByDate.length === 0 ? (
+                <div className="text-center py-12 text-gray-400">
+                  <p>No songs found for {new Date(selectedDate).toLocaleDateString()}</p>
+                </div>
+              ) : (
+                <div className="space-y-3 max-h-[600px] overflow-y-auto">
+                  {songsByDate
+                    .filter((song) => {
+                      if (!searchQuery.trim()) return true;
+                      const query = searchQuery.toLowerCase();
+                      return (
+                        song.title.toLowerCase().includes(query) ||
+                        song.artist.toLowerCase().includes(query) ||
+                        song.album.toLowerCase().includes(query)
+                      );
+                    })
+                    .map((song) => (
+                      <div
+                        key={song.id}
+                        onClick={() => setSelectedSongId(song.id)}
+                        className="p-4 rounded-xl bg-midnight-800/50 border border-midnight-700 hover:border-gold-400/50 cursor-pointer transition-all"
+                      >
+                        <div className="flex items-center gap-4">
+                          {song.album_art_url && (
+                            <div className="relative w-12 h-12 rounded-lg overflow-hidden flex-shrink-0">
+                              <Image
+                                src={song.album_art_url}
+                                alt={song.album}
+                                fill
+                                className="object-cover"
+                              />
+                            </div>
+                          )}
+                          <div className="flex-1 min-w-0">
+                            <h4 className="font-semibold text-white truncate">{song.title}</h4>
+                            <p className="text-sm text-gray-400 truncate">{song.artist}</p>
+                            <p className="text-xs text-gray-500 truncate">{song.album}</p>
+                            <div className="mt-1 text-xs text-gray-500">
+                              {song.requested_by && (
+                                <span>Requested by {song.requested_by}</span>
+                              )}
+                              {song.played_at && (
+                                <span className="ml-2">• Played at {formatDate(song.played_at)}</span>
+                              )}
+                              {!song.played_at && song.requested_at && (
+                                <span className="ml-2">• Requested at {formatDate(song.requested_at)}</span>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex-shrink-0">
+                            <svg className="w-5 h-5 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                 </div>
               )}
             </div>

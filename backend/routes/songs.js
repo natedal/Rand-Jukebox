@@ -1,7 +1,7 @@
 import express from 'express';
 import { getPool } from '../db/index.js';
 import { getVenueId } from '../utils/queue.js';
-import { getUserIdentifier } from '../utils/userIdentifier.js';
+import { getUserIdentifier, getUsername } from '../utils/userIdentifier.js';
 import { searchSpotify, getSpotifyAccessToken, getAudioFeatures } from '../services/spotify.js';
 
 const router = express.Router();
@@ -179,6 +179,7 @@ router.post('/request', async (req, res) => {
   try {
     const { spotify_id } = req.body;
     const userIdentifier = getUserIdentifier(req);
+    const username = getUsername(req) || userIdentifier.substring(0, 20); // Use username if provided, else fallback to truncated identifier
     const venueId = req.venue.id;
     const venueSlug = req.venue.slug;
 
@@ -293,7 +294,7 @@ router.post('/request', async (req, res) => {
         spotifyTrack.album.images[0]?.url || null,
         spotifyTrack.duration_ms,
         spotifyTrack.explicit,
-        userIdentifier.substring(0, 20), // Truncate for display
+        username, // Use username instead of truncated identifier
         audioFeatures ? JSON.stringify(audioFeatures) : null,
       ]
     );

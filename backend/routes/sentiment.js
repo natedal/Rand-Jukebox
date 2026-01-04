@@ -141,6 +141,73 @@ router.get('/top-songs', authenticateAdmin, async (req, res) => {
 });
 
 /**
+ * GET /api/admin/sentiment/songs-by-date?date=YYYY-MM-DD
+ * Get songs that were queued or played on a specific date
+ */
+router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
+  try {
+    const { date } = req.query;
+    const venueId = req.venue.id;
+    const pool = getPool();
+
+    if (!date) {
+      return res.status(400).json({ error: 'Date parameter is required (format: YYYY-MM-DD)' });
+    }
+
+    // Validate date format
+    const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+    if (!dateRegex.test(date)) {
+      return res.status(400).json({ error: 'Invalid date format. Use YYYY-MM-DD' });
+    }
+
+    // Query songs where requested_at OR played_at falls on the selected date
+    // Extract date part from timestamps for comparison
+    // Note: Timestamps are stored as TIMESTAMP WITHOUT TIME ZONE, so we compare dates directly
+    const result = await pool.query(`
+      SELECT DISTINCT
+        s.id,
+        s.spotify_id,
+        s.title,
+        s.artist,
+        s.album,
+        s.album_art_url,
+        s.requested_at,
+        s.played_at,
+        s.requested_by
+      FROM songs s
+      WHERE s.venue_id = $1
+        AND (
+          DATE(s.requested_at) = $2::DATE
+          OR (s.played_at IS NOT NULL AND DATE(s.played_at) = $2::DATE)
+        )
+      ORDER BY 
+        COALESCE(s.played_at, s.requested_at) DESC
+    `, [venueId, date]);
+
+    const songs = result.rows.map(row => ({
+      id: row.id,
+      spotify_id: row.spotify_id,
+      title: row.title,
+      artist: row.artist,
+      album: row.album,
+      album_art_url: row.album_art_url,
+      requested_at: row.requested_at,
+      played_at: row.played_at,
+      requested_by: row.requested_by,
+    }));
+
+    res.json({
+      success: true,
+      date,
+      songs,
+    });
+  } catch (error) {
+    console.error('Error fetching songs by date:', error);
+    res.status(500).json({ error: 'Failed to fetch songs by date' });
+  }
+});
+
+/**
  * GET /api/admin/sentiment/song/:song_id/feedback
  * Get feedback comments for a specific song
  */

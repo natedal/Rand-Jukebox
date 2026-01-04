@@ -71,6 +71,12 @@ api.interceptors.request.use((config) => {
       config.headers['X-User-Identifier'] = userIdentifier;
     }
     
+    // Add username header if available
+    const username = localStorage.getItem('user_username');
+    if (username) {
+      config.headers['X-User-Username'] = username;
+    }
+    
     // Add venue slug header
     const venueSlug = getVenueSlug();
     config.headers['X-Venue-Slug'] = venueSlug;
@@ -313,6 +319,14 @@ export const sentimentApi = {
     const token = localStorage.getItem('admin_token');
     return api.get('/api/admin/sentiment/top-songs', {
       params: limit ? { limit } : {},
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  },
+  getSongsByDate: (date: string) => {
+    if (typeof window === 'undefined') return Promise.reject('Not in browser');
+    const token = localStorage.getItem('admin_token');
+    return api.get('/api/admin/sentiment/songs-by-date', {
+      params: { date },
       headers: { Authorization: `Bearer ${token}` },
     });
   },

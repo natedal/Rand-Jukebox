@@ -30,3 +30,21 @@ export async function getUserIdentifier(): Promise<string> {
   return identifier;
 }
 
+/**
+ * Get username from localStorage
+ * Returns null if username is not set
+ */
+export function getUsername(): string | null {
+  if (typeof window === 'undefined') {
+    return null;
+  }
+  return localStorage.getItem('user_username');
+}
+
+/**
+ * Check if username is set
+ */
+export function hasUsername(): boolean {
+  return getUsername() !== null;
+}
+
