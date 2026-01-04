@@ -51,19 +51,13 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
       </div>
 
       {/* Calendar Container */}
-      <div className="glass rounded-3xl p-6 md:p-8 w-full max-w-md relative overflow-hidden">
-        {/* Decorative Background Elements */}
-        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gold-400/5 rounded-full blur-2xl"></div>
-        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-gold-500/5 rounded-full blur-2xl"></div>
-        
-        {/* Border Glow Effect */}
-        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-gold-400/20 via-transparent to-gold-400/20 opacity-50 pointer-events-none"></div>
+      <div className="glass rounded-2xl p-5 md:p-6 w-full max-w-sm relative overflow-hidden">
         <style dangerouslySetInnerHTML={{__html: `
           .rdp {
-            --rdp-cell-size: 40px;
-            --rdp-accent-color: #fbbf24;
+            --rdp-cell-size: 36px;
+            --rdp-accent-color: #cfae45;
             --rdp-background-color: #1e293b;
-            --rdp-accent-color-dark: #f59e0b;
+            --rdp-accent-color-dark: #8a7429;
             --rdp-background-color-dark: #0f172a;
             --rdp-outline: 2px solid var(--rdp-accent-color);
             --rdp-outline-selected: 3px solid var(--rdp-accent-color);
@@ -86,21 +80,19 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 0.75rem 0.5rem;
-            margin-bottom: 0.5rem;
+            padding: 0.5rem 0.25rem;
+            margin-bottom: 1rem;
             color: white;
             font-weight: 600;
           }
 
           .rdp-caption_label {
-            font-size: 1.125rem;
-            font-weight: 700;
+            font-size: 1rem;
+            font-weight: 600;
             color: white;
-            font-family: 'Syne', sans-serif;
-            background: linear-gradient(135deg, #e8d68a 0%, #cfae45 50%, #8a7429 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
+            font-family: 'DM Sans', sans-serif;
+            text-align: center;
+            flex: 1;
           }
 
           .rdp-nav {
@@ -109,27 +101,26 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           }
 
           .rdp-button {
-            padding: 0.5rem 0.75rem;
-            border-radius: 0.75rem;
-            background-color: rgba(207, 174, 69, 0.1);
-            border: 1px solid rgba(207, 174, 69, 0.2);
-            color: #cfae45;
+            padding: 0.375rem 0.5rem;
+            border-radius: 0.5rem;
+            background-color: transparent;
+            border: none;
+            color: #a9b9d4;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.15s ease;
             display: flex;
             align-items: center;
             justify-content: center;
+            opacity: 0.7;
           }
 
           .rdp-button:hover {
-            background-color: rgba(207, 174, 69, 0.2);
-            border-color: rgba(207, 174, 69, 0.4);
-            transform: scale(1.05);
+            opacity: 1;
+            color: #cfae45;
           }
 
           .rdp-button:focus {
-            outline: 2px solid rgba(207, 174, 69, 0.5);
-            outline-offset: 2px;
+            outline: none;
           }
 
           .rdp-button:active {
@@ -163,18 +154,18 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           }
 
           .rdp-button_reset {
-            background-color: rgba(15, 30, 51, 0.4);
-            border: 1.5px solid rgba(169, 185, 212, 0.2);
+            background-color: transparent;
+            border: none;
             cursor: pointer;
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.5rem;
+            border-radius: 0.375rem;
             color: #f0f3f8;
-            transition: all 0.2s ease;
-            font-weight: 500;
+            transition: all 0.15s ease;
+            font-weight: 400;
             position: relative;
             min-width: 36px;
             min-height: 36px;
@@ -187,43 +178,34 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           }
 
           .rdp-day:hover .rdp-button_reset {
-            background-color: rgba(207, 174, 69, 0.15);
-            border-color: rgba(207, 174, 69, 0.5);
-            border-width: 2px;
-            color: #cfae45;
-            transform: scale(1.05);
-            box-shadow: 0 2px 8px rgba(207, 174, 69, 0.2);
-          }
-
-          .rdp-day_selected .rdp-button_reset {
-            background: linear-gradient(135deg, rgba(207, 174, 69, 0.95) 0%, rgba(232, 214, 138, 0.95) 100%);
-            color: #080f1c;
-            font-weight: 700;
-            border: 2px solid rgba(207, 174, 69, 0.8);
-            box-shadow: 0 4px 12px rgba(207, 174, 69, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
-          }
-
-          .rdp-day_selected:hover .rdp-button_reset {
-            background: linear-gradient(135deg, rgba(207, 174, 69, 1) 0%, rgba(232, 214, 138, 1) 100%);
-            color: #080f1c;
-            transform: scale(1.08);
-            box-shadow: 0 6px 16px rgba(207, 174, 69, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
-          }
-
-          .rdp-day_today .rdp-button_reset {
-            font-weight: 700;
-            border: 2px solid rgba(207, 174, 69, 0.6);
             background-color: rgba(207, 174, 69, 0.1);
             color: #cfae45;
           }
 
+          .rdp-day_selected .rdp-button_reset {
+            background-color: #cfae45;
+            color: #080f1c;
+            font-weight: 600;
+            border-radius: 0.375rem;
+          }
+
+          .rdp-day_selected:hover .rdp-button_reset {
+            background-color: #e8d68a;
+            color: #080f1c;
+          }
+
+          .rdp-day_today .rdp-button_reset {
+            font-weight: 600;
+            color: #cfae45;
+          }
+
           .rdp-day_today.rdp-day_selected .rdp-button_reset {
-            border: 2px solid rgba(8, 15, 28, 0.4);
+            color: #080f1c;
           }
 
           .rdp-day_outside .rdp-button_reset {
-            border-color: rgba(169, 185, 212, 0.1);
-            opacity: 0.3;
+            opacity: 0.25;
+            color: #9ca3af;
           }
 
           .rdp-day_outside {
@@ -248,26 +230,17 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           .rdp-day.has-feedback .rdp-button_reset::after {
             content: '';
             position: absolute;
-            bottom: 3px;
+            bottom: 4px;
             left: 50%;
             transform: translateX(-50%);
-            width: 5px;
-            height: 5px;
+            width: 4px;
+            height: 4px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #cfae45 0%, #e8d68a 100%);
-            box-shadow: 0 0 6px rgba(207, 174, 69, 0.6);
-            animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+            background-color: #cfae45;
           }
 
           .rdp-day.has-feedback.rdp-day_selected .rdp-button_reset::after {
-            background: linear-gradient(135deg, #080f1c 0%, #0f1e33 100%);
-            box-shadow: 0 0 4px rgba(8, 15, 28, 0.8);
-          }
-
-          .rdp-day.has-feedback:hover .rdp-button_reset::after {
-            width: 6px;
-            height: 6px;
-            box-shadow: 0 0 8px rgba(207, 174, 69, 0.8);
+            background-color: #080f1c;
           }
         `}} />
         <div className="relative z-10 flex justify-center">
