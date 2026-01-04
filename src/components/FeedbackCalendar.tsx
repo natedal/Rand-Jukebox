@@ -163,17 +163,21 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           }
 
           .rdp-button_reset {
-            background-color: transparent;
-            border: none;
+            background-color: rgba(15, 30, 51, 0.4);
+            border: 1.5px solid rgba(169, 185, 212, 0.2);
             cursor: pointer;
             width: 100%;
             height: 100%;
             display: flex;
             align-items: center;
             justify-content: center;
-            border-radius: 0.375rem;
-            color: #e5e7eb;
-            transition: all 0.2s;
+            border-radius: 0.5rem;
+            color: #f0f3f8;
+            transition: all 0.2s ease;
+            font-weight: 500;
+            position: relative;
+            min-width: 36px;
+            min-height: 36px;
           }
 
           .rdp-day {
@@ -183,24 +187,43 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           }
 
           .rdp-day:hover .rdp-button_reset {
-            background-color: rgba(251, 191, 36, 0.1);
-            color: #fbbf24;
+            background-color: rgba(207, 174, 69, 0.15);
+            border-color: rgba(207, 174, 69, 0.5);
+            border-width: 2px;
+            color: #cfae45;
+            transform: scale(1.05);
+            box-shadow: 0 2px 8px rgba(207, 174, 69, 0.2);
           }
 
           .rdp-day_selected .rdp-button_reset {
-            background-color: #fbbf24;
-            color: #1e293b;
+            background: linear-gradient(135deg, rgba(207, 174, 69, 0.95) 0%, rgba(232, 214, 138, 0.95) 100%);
+            color: #080f1c;
             font-weight: 700;
+            border: 2px solid rgba(207, 174, 69, 0.8);
+            box-shadow: 0 4px 12px rgba(207, 174, 69, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.2);
           }
 
           .rdp-day_selected:hover .rdp-button_reset {
-            background-color: #f59e0b;
-            color: #1e293b;
+            background: linear-gradient(135deg, rgba(207, 174, 69, 1) 0%, rgba(232, 214, 138, 1) 100%);
+            color: #080f1c;
+            transform: scale(1.08);
+            box-shadow: 0 6px 16px rgba(207, 174, 69, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.3);
           }
 
           .rdp-day_today .rdp-button_reset {
             font-weight: 700;
-            border: 1px solid rgba(251, 191, 36, 0.5);
+            border: 2px solid rgba(207, 174, 69, 0.6);
+            background-color: rgba(207, 174, 69, 0.1);
+            color: #cfae45;
+          }
+
+          .rdp-day_today.rdp-day_selected .rdp-button_reset {
+            border: 2px solid rgba(8, 15, 28, 0.4);
+          }
+
+          .rdp-day_outside .rdp-button_reset {
+            border-color: rgba(169, 185, 212, 0.1);
+            opacity: 0.3;
           }
 
           .rdp-day_outside {
