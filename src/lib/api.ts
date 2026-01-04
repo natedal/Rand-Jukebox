@@ -93,6 +93,16 @@ api.interceptors.response.use(
       const baseURL = error.config.baseURL || '';
       const fullUrl = baseURL + url;
       
+      // Check for venue not found errors (404)
+      if (error.response?.status === 404) {
+        const errorMessage = error.response?.data?.error || '';
+        if (errorMessage.includes('Venue not found')) {
+          console.error('Venue not found:', errorMessage);
+          // Don't retry venue not found errors - they're permanent
+          error.config.__skipRetry = true;
+        }
+      }
+      
       // Check if URL is malformed (contains Vercel domain + Railway domain)
       if (fullUrl.includes('.vercel.app') && fullUrl.includes('.railway.app') && !fullUrl.startsWith('http')) {
         console.error('❌ API URL Configuration Error!');

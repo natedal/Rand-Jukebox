@@ -25,6 +25,15 @@ export function getSocket(): Socket {
     socket.on('disconnect', () => {
       console.log('❌ Socket disconnected');
     });
+
+    socket.on('error', (data: { message?: string }) => {
+      console.error('Socket error:', data.message);
+      // If venue not found error, disconnect socket to prevent further attempts
+      if (data.message?.includes('Venue not found')) {
+        console.error('Venue not found via socket - disconnecting');
+        socket.disconnect();
+      }
+    });
   }
 
   return socket;

@@ -7,9 +7,11 @@ import { SearchBar } from '@/components/SearchBar';
 import { QueueList } from '@/components/QueueList';
 import { Footer } from '@/components/Footer';
 import { UsernameModal } from '@/components/UsernameModal';
+import { VenueNotConfigured } from '@/components/VenueNotConfigured';
 import { motion } from 'framer-motion';
 import { useJukeboxStore } from '@/store/useJukeboxStore';
 import { getUserIdentifier, hasUsername } from '@/lib/fingerprint';
+import { useVenueValidation } from '@/hooks/useVenueValidation';
 
 export default function Home() {
   const initializeSocket = useJukeboxStore((state) => state.initializeSocket);
@@ -17,21 +19,32 @@ export default function Home() {
   const activeUsers = useJukeboxStore((state) => state.activeUsers);
   const [showUsernameModal, setShowUsernameModal] = useState(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  
+  // Validate venue exists before rendering app
+  const { isValid, isLoading: isValidating, error, venueSlug } = useVenueValidation();
 
   useEffect(() => {
+    // Don't initialize if venue is invalid
+    if (!isValidating && !isValid) {
+      return;
+    }
+
     // Check if username is set
     if (!hasUsername()) {
       setShowUsernameModal(true);
       return;
     }
 
-    // Initialize user identifier
-    getUserIdentifier();
-    
-    // Initialize socket connection and fetch data
-    initializeSocket();
-    setIsInitialized(true);
-  }, [initializeSocket]);
+    // Only initialize if venue is valid
+    if (isValid && !isValidating) {
+      // Initialize user identifier
+      getUserIdentifier();
+      
+      // Initialize socket connection and fetch data
+      initializeSocket();
+      setIsInitialized(true);
+    }
+  }, [initializeSocket, isValid, isValidating]);
 
   const handleUsernameSet = (username: string) => {
     setShowUsernameModal(false);
@@ -42,8 +55,13 @@ export default function Home() {
     setIsInitialized(true);
   };
 
-  // Don't render main app until username is set
-  if (!isInitialized) {
+  // Show venue not configured page if venue is invalid
+  if (!isValidating && !isValid) {
+    return <VenueNotConfigured venueSlug={venueSlug} error={error} />;
+  }
+
+  // Show loading while validating venue or waiting for username
+  if (isValidating || !isInitialized) {
     return (
       <>
         <UsernameModal isOpen={showUsernameModal} onClose={handleUsernameSet} />

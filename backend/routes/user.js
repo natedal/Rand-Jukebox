@@ -12,8 +12,8 @@ const router = express.Router();
 router.get('/status', async (req, res) => {
   try {
     const userIdentifier = getUserIdentifier(req);
-    const venueId = req.venue.id;
-    const venueSlug = req.venue.slug;
+    const venueSlug = process.env.VENUE_SLUG || 'rand';
+    const venueId = await getVenueId(venueSlug);
 
     const today = new Date().toISOString().split('T')[0];
     const pool = getPool();
@@ -27,8 +27,7 @@ router.get('/status', async (req, res) => {
     );
 
     const requestsToday = parseInt(requestsResult.rows[0].count);
-    const maxRequestsPerDay = parseInt(process.env.MAX_REQUESTS_PER_DAY || '3');
-    const requestsRemaining = Math.max(0, maxRequestsPerDay - requestsToday);
+    const requestsRemaining = Math.max(0, 3 - requestsToday);
 
     // Get votes cast today
     const votesResult = await pool.query(
@@ -41,16 +40,11 @@ router.get('/status', async (req, res) => {
     );
 
     const votesCast = parseInt(votesResult.rows[0].count);
-    const maxVotesPerDay = parseInt(process.env.MAX_VOTES_PER_DAY || '10');
-    const votesRemaining = Math.max(0, maxVotesPerDay - votesCast);
 
     res.json({
       requests_remaining: requestsRemaining,
       requests_today: requestsToday,
-      max_requests_per_day: maxRequestsPerDay,
       votes_cast: votesCast,
-      votes_remaining: votesRemaining,
-      max_votes_per_day: maxVotesPerDay,
     });
   } catch (error) {
     console.error('Error fetching user status:', error);
