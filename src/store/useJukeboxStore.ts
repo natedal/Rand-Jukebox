@@ -25,6 +25,7 @@ export interface Song {
   status?: string;
   is_explicit?: boolean;
   isExplicit?: boolean; // For backward compatibility
+  user_vote?: 'upvote' | 'downvote' | null; // User's current vote on this song
 }
 
 export interface Feedback {
@@ -53,6 +54,8 @@ interface JukeboxState {
   requestsToday: number;
   maxRequestsPerDay: number;
   votesCast: number;
+  votesRemaining: number;
+  maxVotesPerDay: number;
   
   // Venue
   venueSlug: string;
@@ -99,6 +102,7 @@ function normalizeSong(song: any): Song {
     upvotes: song.upvotes || 0,
     downvotes: song.downvotes || 0,
     net_score: song.net_score !== undefined ? song.net_score : (song.votes || 0),
+    user_vote: song.user_vote || null, // 'upvote', 'downvote', or null
   };
 }
 
@@ -116,6 +120,8 @@ export const useJukeboxStore = create<JukeboxState>((set, get) => ({
   requestsToday: 0,
   maxRequestsPerDay: 3,
   votesCast: 0,
+  votesRemaining: 10,
+  maxVotesPerDay: 10,
   venueSlug: typeof window !== 'undefined' ? getVenueSlug() : 'rand',
   venueName: '',
   feedback: {},
@@ -198,12 +204,20 @@ export const useJukeboxStore = create<JukeboxState>((set, get) => ({
     }
   },
 
-  // Upvote a song
+  // Upvote a song (toggles if already upvoted)
   upvoteSong: async (songId: string) => {
     try {
+      const song = [...get().queue, get().currentSong].find(s => s?.id === songId);
+      // If already upvoted, remove vote instead
+      if (song?.user_vote === 'upvote') {
+        await get().removeVote(songId);
+        return; // removeVote already refreshes
+      }
+      // Otherwise, upvote (will change downvote to upvote if needed)
       await votesApi.upvote(songId);
       // Refresh queue to get updated vote counts
       await get().fetchQueue();
+      await get().fetchUserStatus();
     } catch (error: any) {
       console.error('Error upvoting:', error);
       // Handle 400 error (already voted) gracefully
@@ -217,12 +231,20 @@ export const useJukeboxStore = create<JukeboxState>((set, get) => ({
     }
   },
 
-  // Downvote a song (true downvote)
+  // Downvote a song (toggles if already downvoted)
   downvoteSong: async (songId: string) => {
     try {
+      const song = [...get().queue, get().currentSong].find(s => s?.id === songId);
+      // If already downvoted, remove vote instead
+      if (song?.user_vote === 'downvote') {
+        await get().removeVote(songId);
+        return; // removeVote already refreshes
+      }
+      // Otherwise, downvote (will change upvote to downvote if needed)
       await votesApi.downvote(songId);
       // Refresh queue to get updated vote counts
       await get().fetchQueue();
+      await get().fetchUserStatus();
     } catch (error: any) {
       console.error('Error downvoting:', error);
       // Handle 400 error gracefully
@@ -241,6 +263,7 @@ export const useJukeboxStore = create<JukeboxState>((set, get) => ({
       await votesApi.remove(songId);
       // Refresh queue to get updated vote counts
       await get().fetchQueue();
+      await get().fetchUserStatus();
     } catch (error: any) {
       console.error('Error removing vote:', error);
       // Handle 400 error gracefully
@@ -317,6 +340,8 @@ export const useJukeboxStore = create<JukeboxState>((set, get) => ({
         requestsToday: data.requests_today,
         maxRequestsPerDay: data.max_requests_per_day || 3,
         votesCast: data.votes_cast,
+        votesRemaining: data.votes_remaining || 10,
+        maxVotesPerDay: data.max_votes_per_day || 10,
       });
     } catch (error: any) {
       console.error('Error fetching user status:', error);

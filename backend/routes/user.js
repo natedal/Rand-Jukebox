@@ -41,12 +41,16 @@ router.get('/status', async (req, res) => {
     );
 
     const votesCast = parseInt(votesResult.rows[0].count);
+    const maxVotesPerDay = parseInt(process.env.MAX_VOTES_PER_DAY || '10');
+    const votesRemaining = Math.max(0, maxVotesPerDay - votesCast);
 
     res.json({
       requests_remaining: requestsRemaining,
       requests_today: requestsToday,
       max_requests_per_day: maxRequestsPerDay,
       votes_cast: votesCast,
+      votes_remaining: votesRemaining,
+      max_votes_per_day: maxVotesPerDay,
     });
   } catch (error) {
     console.error('Error fetching user status:', error);

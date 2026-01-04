@@ -168,11 +168,7 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
     }
 
     // Query songs where requested_at OR played_at falls on the selected date
-    // Cast timestamps to DATE for comparison
-    // Note: Timestamps are stored as TIMESTAMP WITHOUT TIME ZONE, so we compare dates directly
-    // Added NULL check for requested_at to prevent errors
-    // Note: DISTINCT not needed since s.id is unique, but kept for safety
-    // ORDER BY expression added to SELECT to satisfy PostgreSQL DISTINCT requirement
+    // Include whether each song has feedback
     const result = await pool.query(`
       SELECT DISTINCT
         s.id,
@@ -184,8 +180,10 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
         s.requested_at,
         s.played_at,
         s.requested_by,
-        COALESCE(s.played_at, s.requested_at) as sort_date
+        COALESCE(s.played_at, s.requested_at) as sort_date,
+        CASE WHEN sf.id IS NOT NULL THEN true ELSE false END as has_feedback
       FROM songs s
+      LEFT JOIN song_feedback sf ON s.id = sf.song_id AND sf.venue_id = $1
       WHERE s.venue_id = $1
         AND s.requested_at IS NOT NULL
         AND (
@@ -205,6 +203,7 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
       requested_at: row.requested_at,
       played_at: row.played_at,
       requested_by: row.requested_by,
+      has_feedback: row.has_feedback,
     }));
 
     res.json({

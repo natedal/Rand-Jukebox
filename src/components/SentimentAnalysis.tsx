@@ -53,6 +53,7 @@ interface SongByDate {
   requested_at: string;
   played_at?: string;
   requested_by?: string;
+  has_feedback?: boolean;
 }
 
 export function SentimentAnalysis() {
@@ -503,7 +504,11 @@ export function SentimentAnalysis() {
                       <div
                         key={song.id}
                         onClick={() => setSelectedSongId(song.id)}
-                        className="p-4 rounded-xl bg-midnight-800/50 border border-midnight-700 hover:border-gold-400/50 cursor-pointer transition-all"
+                        className={`p-4 rounded-xl border cursor-pointer transition-all ${
+                          song.has_feedback
+                            ? 'bg-gold-400/10 border-gold-400/50 hover:border-gold-400'
+                            : 'bg-midnight-800/50 border-midnight-700 hover:border-gold-400/50'
+                        }`}
                       >
                         <div className="flex items-center gap-4">
                           {song.album_art_url && (

@@ -1,6 +1,7 @@
 import express from 'express';
 import { getQueue, getCurrentSong, getVenueId } from '../utils/queue.js';
 import { getPool } from '../db/index.js';
+import { getUserIdentifier } from '../utils/userIdentifier.js';
 
 const router = express.Router();
 
@@ -12,6 +13,7 @@ router.get('/', async (req, res) => {
   try {
     const venueId = req.venue.id;
     const venueSlug = req.venue.slug;
+    const userIdentifier = getUserIdentifier(req);
     
     const [queue, currentSong] = await Promise.all([
       getQueue(venueId),
@@ -40,6 +42,20 @@ router.get('/', async (req, res) => {
 
     const stats = statsResult.rows[0];
 
+    // Get user's votes for all songs in queue and current song
+    const songIds = [...queue.map(s => s.id), ...(currentSong ? [currentSong.id] : [])];
+    let userVotes = {};
+    if (songIds.length > 0) {
+      const votesResult = await pool.query(
+        'SELECT song_id, vote_type FROM votes WHERE song_id = ANY($1) AND user_identifier = $2',
+        [songIds, userIdentifier]
+      );
+      userVotes = votesResult.rows.reduce((acc, row) => {
+        acc[row.song_id] = row.vote_type;
+        return acc;
+      }, {});
+    }
+
     res.json({
       queue: queue.map(song => ({
         id: song.id,
@@ -56,6 +72,7 @@ router.get('/', async (req, res) => {
         requested_at: song.requested_at,
         requested_by: song.requested_by,
         status: song.status,
+        user_vote: userVotes[song.id] || null, // 'upvote', 'downvote', or null
       })),
       current_song: currentSong ? {
         id: currentSong.id,
@@ -71,6 +88,7 @@ router.get('/', async (req, res) => {
         net_score: currentSong.net_score,
         requested_at: currentSong.requested_at,
         requested_by: currentSong.requested_by,
+        user_vote: userVotes[currentSong.id] || null, // 'upvote', 'downvote', or null
       } : null,
       is_playing: settings.is_playing,
       queue_enabled: settings.is_queue_enabled,

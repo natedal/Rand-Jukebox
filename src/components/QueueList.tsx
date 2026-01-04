@@ -6,6 +6,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 function SongCard({ song, index }: { song: Song; index: number }) {
   const { upvoteSong, downvoteSong } = useJukeboxStore();
+  const isUpvoted = song.user_vote === 'upvote';
+  const isDownvoted = song.user_vote === 'downvote';
 
   const formatDuration = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
@@ -61,8 +63,12 @@ function SongCard({ song, index }: { song: Song; index: number }) {
                 // Error is handled in store
               }
             }}
-            className="p-1.5 sm:p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all duration-200"
-            title="Downvote"
+            className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
+              isDownvoted
+                ? 'bg-red-500/30 text-red-400 hover:bg-red-500/40'
+                : 'hover:bg-red-500/20 text-gray-400 hover:text-red-400'
+            }`}
+            title={isDownvoted ? "Remove downvote" : "Downvote"}
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -97,8 +103,12 @@ function SongCard({ song, index }: { song: Song; index: number }) {
                 // Error is handled in store
               }
             }}
-            className="p-1.5 sm:p-2 rounded-lg hover:bg-green-500/20 text-gray-400 hover:text-green-400 transition-all duration-200"
-            title="Upvote"
+            className={`p-1.5 sm:p-2 rounded-lg transition-all duration-200 ${
+              isUpvoted
+                ? 'bg-green-500/30 text-green-400 hover:bg-green-500/40'
+                : 'hover:bg-green-500/20 text-gray-400 hover:text-green-400'
+            }`}
+            title={isUpvoted ? "Remove upvote" : "Upvote"}
           >
             <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />

@@ -4,10 +4,12 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { useEffect, useState } from 'react';
 import { getVenueSlug, getVenueName } from '@/lib/venue';
+import { useJukeboxStore } from '@/store/useJukeboxStore';
 
 export function Header() {
   const [venueName, setVenueName] = useState<string>('Rand');
   const [isLoading, setIsLoading] = useState(true);
+  const { votesRemaining, maxVotesPerDay } = useJukeboxStore();
 
   useEffect(() => {
     const fetchVenueName = async () => {
@@ -60,6 +62,16 @@ export function Header() {
 
             {/* Navigation */}
             <nav className="flex items-center gap-2 sm:gap-4">
+              {/* Votes Remaining */}
+              <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-lg bg-midnight-800/50 border border-gold-400/20">
+                <svg className="w-4 h-4 text-gold-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="text-xs text-gray-300">
+                  <span className="text-gold-400 font-semibold">{votesRemaining}</span>
+                  <span className="text-gray-500">/{maxVotesPerDay} votes</span>
+                </span>
+              </div>
               <Link
                 href="/"
                 className="px-4 py-2 rounded-xl text-sm font-medium text-white hover:text-gold-400 hover:bg-gold-400/10 transition-all duration-200"

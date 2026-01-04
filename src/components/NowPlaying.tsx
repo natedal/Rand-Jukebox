@@ -9,6 +9,8 @@ import { FeedbackModal } from './FeedbackModal';
 export function NowPlaying() {
   const { currentSong, isPlaying, progress, upvoteSong, downvoteSong } = useJukeboxStore();
   const [isFeedbackOpen, setIsFeedbackOpen] = useState(false);
+  const isUpvoted = currentSong?.user_vote === 'upvote';
+  const isDownvoted = currentSong?.user_vote === 'downvote';
 
   if (!currentSong) {
     return (
@@ -142,8 +144,12 @@ export function NowPlaying() {
                     // Error handled in store
                   }
                 }}
-                className="p-2 rounded-lg hover:bg-red-500/20 text-gray-400 hover:text-red-400 transition-all"
-                title="Downvote"
+                className={`p-2 rounded-lg transition-all ${
+                  isDownvoted
+                    ? 'bg-red-500/30 text-red-400 hover:bg-red-500/40'
+                    : 'hover:bg-red-500/20 text-gray-400 hover:text-red-400'
+                }`}
+                title={isDownvoted ? "Remove downvote" : "Downvote"}
               >
                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
@@ -172,8 +178,12 @@ export function NowPlaying() {
                     // Error handled in store
                   }
                 }}
-                className="p-2 rounded-lg hover:bg-green-500/20 text-gray-400 hover:text-green-400 transition-all"
-                title="Upvote"
+                className={`p-2 rounded-lg transition-all ${
+                  isUpvoted
+                    ? 'bg-green-500/30 text-green-400 hover:bg-green-500/40'
+                    : 'hover:bg-green-500/20 text-gray-400 hover:text-green-400'
+                }`}
+                title={isUpvoted ? "Remove upvote" : "Upvote"}
               >
                 <svg className="w-5 h-5 md:w-6 md:h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />

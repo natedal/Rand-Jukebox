@@ -38,7 +38,7 @@ export async function getQueue(venueId) {
       net_score DESC,
       CASE WHEN s.admin_priority IS NOT NULL THEN 0 ELSE 1 END,
       COALESCE(s.admin_priority, 0) DESC,
-      s.requested_at DESC
+      s.requested_at ASC
   `, [venueId]);
 
   return result.rows.map(row => ({
