@@ -131,7 +131,7 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             width: 100%;
             max-width: none;
             border-collapse: separate;
-            border-spacing: 4px;
+            border-spacing: 6px;
             margin: 0 auto;
           }
 
