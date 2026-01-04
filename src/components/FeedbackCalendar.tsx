@@ -35,9 +35,29 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.3 }}
-      className="flex justify-center"
+      className="flex flex-col items-center"
     >
-      <div className="glass rounded-3xl p-6 md:p-8 w-full max-w-md">
+      {/* Instruction Text */}
+      <div className="mb-4 text-center">
+        <p className="text-gray-300 text-sm md:text-base">
+          Choose a date to see customer feedback for songs played on that date.
+        </p>
+        {datesWithFeedback.length > 0 && (
+          <p className="text-xs text-gray-500 mt-2 flex items-center justify-center gap-2">
+            <span className="inline-block w-2 h-2 rounded-full bg-gradient-to-r from-gold-400 to-gold-500 shadow-[0_0_6px_rgba(207,174,69,0.6)]"></span>
+            Dates with feedback are highlighted
+          </p>
+        )}
+      </div>
+
+      {/* Calendar Container */}
+      <div className="glass rounded-3xl p-6 md:p-8 w-full max-w-md relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute -top-10 -right-10 w-32 h-32 bg-gold-400/5 rounded-full blur-2xl"></div>
+        <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-gold-500/5 rounded-full blur-2xl"></div>
+        
+        {/* Border Glow Effect */}
+        <div className="absolute inset-0 rounded-3xl bg-gradient-to-r from-gold-400/20 via-transparent to-gold-400/20 opacity-50 pointer-events-none"></div>
         <style dangerouslySetInnerHTML={{__html: `
           .rdp {
             --rdp-cell-size: 40px;
@@ -117,16 +137,18 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
           .rdp-table {
             width: 100%;
             max-width: none;
-            border-collapse: collapse;
+            border-collapse: separate;
+            border-spacing: 4px;
           }
 
           .rdp-head_cell {
             color: #a9b9d4;
             font-size: 0.75rem;
             font-weight: 600;
-            padding: 0.75rem 0.5rem;
+            padding: 0.75rem 0.5rem 0.5rem;
             text-transform: uppercase;
             letter-spacing: 0.1em;
+            opacity: 0.8;
           }
 
           .rdp-cell {
@@ -134,7 +156,7 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             height: var(--rdp-cell-size);
             text-align: center;
             font-size: 0.875rem;
-            padding: 0;
+            padding: 2px;
           }
 
           .rdp-button_reset {
@@ -222,7 +244,8 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             box-shadow: 0 0 8px rgba(207, 174, 69, 0.8);
           }
         `}} />
-        <DayPicker
+        <div className="relative z-10">
+          <DayPicker
           mode="single"
           selected={selectedDate}
           onSelect={(date) => {
@@ -258,7 +281,8 @@ export function FeedbackCalendar({ selectedDate, onDateSelect, datesWithFeedback
             day_range_middle: 'day_range_middle',
             day_hidden: 'day_hidden',
           }}
-        />
+          />
+        </div>
       </div>
     </motion.div>
   );
