@@ -168,7 +168,7 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
     }
 
     // Query songs where requested_at OR played_at falls on the selected date
-    // Extract date part from timestamps for comparison
+    // Cast timestamps to DATE for comparison
     // Note: Timestamps are stored as TIMESTAMP WITHOUT TIME ZONE, so we compare dates directly
     // Added NULL check for requested_at to prevent errors
     const result = await pool.query(`
@@ -186,8 +186,8 @@ router.get('/songs-by-date', authenticateAdmin, async (req, res) => {
       WHERE s.venue_id = $1
         AND s.requested_at IS NOT NULL
         AND (
-          DATE(s.requested_at) = $2::DATE
-          OR (s.played_at IS NOT NULL AND DATE(s.played_at) = $2::DATE)
+          s.requested_at::DATE = $2::DATE
+          OR (s.played_at IS NOT NULL AND s.played_at::DATE = $2::DATE)
         )
       ORDER BY 
         COALESCE(s.played_at, s.requested_at) DESC
@@ -237,12 +237,12 @@ router.get('/dates-with-feedback', authenticateAdmin, async (req, res) => {
     // Query to find all dates that have songs with feedback
     // Check both requested_at and played_at dates
     const result = await pool.query(`
-      SELECT DISTINCT DATE(s.requested_at) as date
+      SELECT DISTINCT s.requested_at::DATE as date
       FROM songs s
       INNER JOIN song_feedback sf ON s.id = sf.song_id
       WHERE s.venue_id = $1 AND s.requested_at IS NOT NULL
       UNION
-      SELECT DISTINCT DATE(s.played_at) as date
+      SELECT DISTINCT s.played_at::DATE as date
       FROM songs s
       INNER JOIN song_feedback sf ON s.id = sf.song_id
       WHERE s.venue_id = $1 AND s.played_at IS NOT NULL
