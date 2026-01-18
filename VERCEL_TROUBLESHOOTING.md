@@ -164,3 +164,5 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001';
 
 Vercel's build process might still fail. Always set environment variables in Vercel Dashboard before deploying.
 
+
+

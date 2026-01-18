@@ -164,12 +164,12 @@ REDIS_URL=redis://localhost:6379
 
 1. Replace `YOUR_CLIENT_ID` in this URL with your actual Client ID:
 ```
-https://accounts.spotify.com/authorize?client_id=YOUR_CLIENT_ID&response_type=code&redirect_uri=http://localhost:3000/api/spotify/callback&scope=user-modify-playback-state%20user-read-playback-state
+https://accounts.spotify.com/authorize?client_id=5e8e29f98a47471ca0c91dc06fbaf5c2&response_type=code&redirect_uri=http://127.0.0.1:3000/api/spotify/callback&scope=user-modify-playback-state%20user-read-playback-state
 ```
 
 2. Open that URL in your browser
 3. Log in and authorize
-4. You'll be redirected to `http://localhost:3000/api/spotify/callback?code=XXXXX`
+4. You'll be redirected to `http://127.0.0.1:3000/api/spotify/callback?code=XXXXX`
 5. Copy the `code` value from the URL
 
 6. Run this command (replace YOUR_CODE, YOUR_CLIENT_ID, YOUR_CLIENT_SECRET):
@@ -304,4 +304,6 @@ Once everything is working, you can:
 - Set up default playlist in admin panel
 
 Need help? Check the error messages and refer to the troubleshooting section above.
+
+
 

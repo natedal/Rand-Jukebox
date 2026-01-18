@@ -76,3 +76,5 @@ If you see errors about the API URL in the console, double-check:
 3. No trailing slash
 4. The Railway backend is actually running
 
+
+

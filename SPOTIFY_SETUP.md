@@ -142,3 +142,5 @@ For multiple venues with subdomains, you'll need to:
 - Each venue can have its own Spotify account connected
 - Refresh tokens are stored encrypted in the database
 
+
+

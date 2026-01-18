@@ -89,6 +89,7 @@ src/
 - [ ] Admin authentication
 - [ ] Analytics dashboard
 - [ ] Mobile app (React Native)
+- [ ] 
 
 ## 📋 Project Proposal
 
